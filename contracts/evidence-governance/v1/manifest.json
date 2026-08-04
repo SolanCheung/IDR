@@ -1,0 +1,51 @@
+{
+  "pack_id": "idr.v1.4.minimal.evidence-governance.conformance.v1",
+  "status": "SPECIFICATION_ONLY",
+  "specification": "docs/architecture/IDR-V1.4-EVIDENCE-GOVERNANCE-SPEC.md",
+  "schema": "contracts/evidence-governance/v1/idr-evidence-governance-v1.schema.json",
+  "valid_cases": [
+    {
+      "id": "BINDING_GOLDEN_V1",
+      "path": "fixtures/valid/decision-evidence-binding.json",
+      "expected_binding_digest": "9051903e764358d738ea94e8ebd19ade5ca24784a180ad57071f4c13210a6504"
+    }
+  ],
+  "invalid_cases": [
+    {
+      "id": "BINDING_SNAPSHOT_SUBSTITUTION",
+      "path": "fixtures/invalid/binding-snapshot-substitution.json",
+      "expected_stage": "DIGEST",
+      "expected_code": "DIGEST_MISMATCH"
+    },
+    {
+      "id": "BINDING_WARNING_DROP",
+      "path": "fixtures/invalid/binding-warning-drop.json",
+      "expected_stage": "DIGEST",
+      "expected_code": "DIGEST_MISMATCH"
+    },
+    {
+      "id": "BINDING_UNKNOWN_FIELD",
+      "path": "fixtures/invalid/binding-unknown-field.json",
+      "expected_stage": "SHAPE",
+      "expected_code": "UNKNOWN_FIELD"
+    },
+    {
+      "id": "SNAPSHOT_ADMITS_DENY",
+      "path": "fixtures/invalid/snapshot-admits-deny.json",
+      "expected_stage": "SNAPSHOT",
+      "expected_code": "DENY_CANNOT_ENTER_SNAPSHOT"
+    },
+    {
+      "id": "PROHIBITED_PERSONALITY_FACT",
+      "path": "fixtures/invalid/prohibited-personality-fact.json",
+      "expected_stage": "QUALIFICATION",
+      "expected_code": "PROHIBITED_INFERENCE_CLASS"
+    },
+    {
+      "id": "PRE_DISPATCH_STALE_PASS",
+      "path": "fixtures/invalid/pre-dispatch-stale-pass.json",
+      "expected_stage": "PRE_DISPATCH",
+      "expected_code": "STALE_PASS"
+    }
+  ]
+}

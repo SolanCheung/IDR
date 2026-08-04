@@ -52,6 +52,22 @@ outputs, local credentials, caches, and packaged audit archives are excluded
 from version control; reproducible audit evidence and validation reports remain
 under `docs/`.
 
+## Validation-only surfaces
+
+The V1.4 Minimal neutral conformance artifacts live under
+`contracts/evidence-governance/v1/`. They provide strict wire-shape schemas, a
+domain-separated Decision/Snapshot binding golden vector, and negative cases
+for substitution, warning removal, unknown fields, `DENY` admission,
+prohibited personality inference, and stale pre-dispatch `PASS` reuse. These
+artifacts are specification tests, not production implementation.
+
+Aegis Life validates the frozen V1.3 adapter through a separate
+`idr-aegis-shadow-validator` crate. The validator can replay and compare
+assessments but has no production authority, dispatch, provider, database, or
+state-write interface. It performs no database or network call; the frozen
+`idr-runtime` manifest still contributes a transitive `sqlx` dependency. See
+`integrations/aegis-life/README.md`.
+
 ## Repository layout
 
 - `crates/idr-protocol`: Candidate/Proof wire boundary, Ed25519 Trust Root

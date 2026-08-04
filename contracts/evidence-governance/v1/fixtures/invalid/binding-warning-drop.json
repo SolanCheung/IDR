@@ -1,0 +1,20 @@
+{
+  "schema_id": "idr.decision_evidence_binding.v1",
+  "schema_version": 1,
+  "snapshot_ref": {
+    "kind": "idr.admitted_evidence_snapshot.v1",
+    "id": "33333333-3333-4333-8333-333333333333",
+    "version": 1,
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "policy_ref": {
+    "policy_id": "44444444-4444-4444-8444-444444444444",
+    "policy_revision": 7,
+    "policy_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "purpose": "supplier-review",
+  "decision_context_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "accepted_warning_codes": [],
+  "bound_at_ms": 1785600000000,
+  "binding_digest": "9051903e764358d738ea94e8ebd19ade5ca24784a180ad57071f4c13210a6504"
+}

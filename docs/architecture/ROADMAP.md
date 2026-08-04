@@ -1,6 +1,6 @@
 # IDR Version Roadmap
 
-Status date: 2026-08-02
+Status date: 2026-08-04
 
 ## Version state
 
@@ -45,10 +45,11 @@ HUMAN MODEL LONG-TERM WRITE = NOT AUTHORIZED
 AEGIS PRODUCTION ADAPTER = NOT AUTHORIZED
 ```
 
-## IDR V1.4 Minimal — specification phase
+## IDR V1.4 Minimal — specification and conformance phase
 
-The only current deliverable is
-`IDR-V1.4-EVIDENCE-GOVERNANCE-SPEC.md`. It defines:
+The authorized deliverables are the normative
+`IDR-V1.4-EVIDENCE-GOVERNANCE-SPEC.md` and neutral, non-production conformance
+artifacts under `contracts/evidence-governance/v1/`. They define and test:
 
 ```text
 CanonicalFactVersionV1
@@ -62,6 +63,17 @@ The specification includes exact object boundaries, state enums, field and
 hash constraints, freshness, lineage, provenance, supersession, remediation,
 Decision/Snapshot binding, dispatch-time validation, invalidation propagation,
 and Rust/TypeScript/Python responsibility boundaries.
+
+The initial conformance pack adds strict JSON wire shapes, one
+domain-separated Decision evidence-binding golden vector, and negative cases
+for snapshot substitution, warning removal, unknown fields, `DENY` admission,
+prohibited personality inference, and stale pre-dispatch `PASS`. It does not
+issue, persist, qualify, seal, bind, revalidate, or dispatch production state.
+
+Aegis Life's Round 14 `idr-aegis-adapter` remains byte-frozen. A separate
+`idr-aegis-shadow-validator` evaluation crate may consume the frozen adapter
+to produce observe-only comparison records. It is outside the production path
+and exposes no production feature or effect interface.
 
 ### Explicitly excluded
 
@@ -83,10 +95,13 @@ separate authorization and audit scope must first resolve:
 2. source proof formats and issuer governance;
 3. predicate schemas, materiality, and freshness budgets;
 4. corroboration independence and human-review authority;
-5. canonical cross-language golden vectors and negative fixtures;
+5. completion of canonical cross-language golden vectors and the full negative
+   fixture matrix beyond the initial neutral pack;
 6. persistence, atomic invalidation propagation, recovery, and privacy design;
 7. migration and backward-compatibility strategy;
 8. a proof that the frozen V1.3 baseline remains byte-for-byte unchanged.
+9. a later-version dependency boundary that can expose offline assessment
+   without inheriting the frozen runtime's non-optional `sqlx` dependency.
 
 Until those gates are separately approved:
 

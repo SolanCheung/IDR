@@ -1,0 +1,23 @@
+{
+  "schema_id": "idr.pre_dispatch_evidence_revalidation.v1",
+  "schema_version": 1,
+  "revalidation_id": "99999999-9999-4999-8999-999999999999",
+  "tenant_id": "11111111-1111-4111-8111-111111111111",
+  "action_ref": { "kind": "idr.action.v1", "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "version": 1, "digest": "1111111111111111111111111111111111111111111111111111111111111111" },
+  "decision_ref": { "kind": "idr.decision.v1", "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "version": 1, "digest": "2222222222222222222222222222222222222222222222222222222222222222" },
+  "binding_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+  "snapshot_ref": { "kind": "idr.admitted_evidence_snapshot.v1", "id": "33333333-3333-4333-8333-333333333333", "version": 1, "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+  "policy_ref": { "policy_id": "44444444-4444-4444-8444-444444444444", "policy_revision": 7, "policy_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+  "dispatch_nonce_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+  "attempt": 1,
+  "lease_ref": { "kind": "idr.dispatch_lease.v1", "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc", "version": 1, "digest": "5555555555555555555555555555555555555555555555555555555555555555" },
+  "authority_state_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+  "checked_at_ms": 1785600060001,
+  "valid_until_ms": 1785600060000,
+  "trusted_clock_ref": { "kind": "trusted-clock.v1", "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd", "version": 1, "digest": "7777777777777777777777777777777777777777777777777777777777777777" },
+  "result": "PASS",
+  "reason_codes": [],
+  "required_actions": [],
+  "completed_actions": [],
+  "revalidation_digest": "8888888888888888888888888888888888888888888888888888888888888888"
+}

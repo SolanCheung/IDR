@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/evidence-governance/v1/idr-evidence-governance-v1.schema.json",
+  "title": "IDR V1.4 Minimal Evidence Governance Contracts",
+  "oneOf": [
+    { "$ref": "#/$defs/canonicalFactVersion" },
+    { "$ref": "#/$defs/evidenceQualificationDecision" },
+    { "$ref": "#/$defs/admittedEvidenceSnapshot" },
+    { "$ref": "#/$defs/decisionEvidenceBinding" },
+    { "$ref": "#/$defs/preDispatchEvidenceRevalidation" }
+  ],
+  "$defs": {
+    "schemaId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "not": { "const": "00000000-0000-0000-0000-000000000000" }
+    },
+    "wireU64": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "positiveWireU64": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "timestampMs": { "$ref": "#/$defs/wireU64" },
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reasonCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "reasonCodes": {
+      "type": "array",
+      "maxItems": 256,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/reasonCode" }
+    },
+    "exactVersionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "version", "digest"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/schemaId" },
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/positiveWireU64" },
+        "digest": { "$ref": "#/$defs/sha256Digest" }
+      }
+    },
+    "exactPolicyRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "policy_revision", "policy_digest"],
+      "properties": {
+        "policy_id": { "$ref": "#/$defs/uuid" },
+        "policy_revision": { "$ref": "#/$defs/positiveWireU64" },
+        "policy_digest": { "$ref": "#/$defs/sha256Digest" }
+      }
+    },
+    "canonicalJson": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "string", "maxLength": 16384 },
+        { "$ref": "#/$defs/wireU64" },
+        {
+          "type": "array",
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/canonicalJson" }
+        },
+        {
+          "type": "object",
+          "maxProperties": 256,
+          "additionalProperties": { "$ref": "#/$defs/canonicalJson" }
+        }
+      ]
+    },
+    "sourceEvidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_evidence_ref", "tenant_id", "subject_ref", "issuer_id",
+        "source_class", "scope", "purpose", "content_digest",
+        "collection_method_id", "collection_method_revision", "observed_at_ms",
+        "issued_at_ms"
+      ],
+      "properties": {
+        "source_evidence_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "tenant_id": { "$ref": "#/$defs/uuid" },
+        "subject_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "issuer_id": { "$ref": "#/$defs/uuid" },
+        "source_class": {
+          "enum": ["PRIMARY", "SECONDARY", "HUMAN_ATTESTATION", "SENSOR", "SYSTEM_RECORD"]
+        },
+        "scope": { "$ref": "#/$defs/schemaId" },
+        "purpose": { "$ref": "#/$defs/schemaId" },
+        "content_digest": { "$ref": "#/$defs/sha256Digest" },
+        "collection_method_id": { "$ref": "#/$defs/schemaId" },
+        "collection_method_revision": { "$ref": "#/$defs/positiveWireU64" },
+        "observed_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "issued_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "expires_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "proof_ref": { "$ref": "#/$defs/exactVersionRef" }
+      }
+    },
+    "factLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lineage_kind", "parent_fact_refs"],
+      "properties": {
+        "lineage_kind": { "enum": ["DIRECT", "DERIVED"] },
+        "parent_fact_refs": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/exactVersionRef" }
+        },
+        "transform_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "parameters_digest": { "$ref": "#/$defs/sha256Digest" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "lineage_kind": { "const": "DIRECT" } } },
+          "then": {
+            "properties": { "parent_fact_refs": { "maxItems": 0 } },
+            "not": { "anyOf": [{ "required": ["transform_ref"] }, { "required": ["parameters_digest"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "lineage_kind": { "const": "DERIVED" } } },
+          "then": {
+            "required": ["transform_ref", "parameters_digest"],
+            "properties": { "parent_fact_refs": { "minItems": 1 } }
+          }
+        }
+      ]
+    },
+    "canonicalFactVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id", "schema_version", "fact_id", "fact_version", "tenant_id",
+        "subject_ref", "predicate", "canonical_value", "value_digest",
+        "source_evidence", "lineage", "issued_at_ms", "status_at_issue", "fact_digest"
+      ],
+      "properties": {
+        "schema_id": { "const": "idr.canonical_fact_version.v1" },
+        "schema_version": { "const": 1 },
+        "fact_id": { "$ref": "#/$defs/uuid" },
+        "fact_version": { "$ref": "#/$defs/positiveWireU64" },
+        "tenant_id": { "$ref": "#/$defs/uuid" },
+        "subject_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "predicate": { "$ref": "#/$defs/schemaId" },
+        "canonical_value": { "$ref": "#/$defs/canonicalJson" },
+        "value_digest": { "$ref": "#/$defs/sha256Digest" },
+        "source_evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/sourceEvidenceRef" }
+        },
+        "lineage": { "$ref": "#/$defs/factLineage" },
+        "previous_version_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "supersession_reason": {
+          "enum": ["REFRESH", "CORRECTION", "SOURCE_REPAIR", "REVOCATION_RESPONSE"]
+        },
+        "issued_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "expires_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "status_at_issue": { "const": "ACTIVE" },
+        "fact_digest": { "$ref": "#/$defs/sha256Digest" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "fact_version": { "const": 1 } } },
+          "then": {
+            "not": { "anyOf": [{ "required": ["previous_version_ref"] }, { "required": ["supersession_reason"] }] }
+          },
+          "else": { "required": ["previous_version_ref", "supersession_reason"] }
+        }
+      ]
+    },
+    "requiredEvidenceAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "kind", "target_ref", "blocking_stage", "acceptance_criteria_digest"],
+      "properties": {
+        "action_id": { "$ref": "#/$defs/uuid" },
+        "kind": { "enum": ["REFRESH", "CORROBORATE", "SOURCE_REPAIR", "HUMAN_REVIEW"] },
+        "target_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "blocking_stage": { "enum": ["BEFORE_SNAPSHOT", "BEFORE_DISPATCH"] },
+        "acceptance_criteria_digest": { "$ref": "#/$defs/sha256Digest" },
+        "due_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "completion_proof_ref": { "$ref": "#/$defs/exactVersionRef" }
+      }
+    },
+    "evidenceQualificationDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id", "schema_version", "qualification_id", "qualification_revision",
+        "tenant_id", "fact_ref", "policy_ref", "decision_context_digest",
+        "input_set_digest", "freshness", "lineage", "provenance", "supersession",
+        "verdict", "warning_codes", "denial_codes", "required_actions",
+        "evaluated_at_ms", "valid_until_ms", "trusted_clock_ref", "qualification_digest"
+      ],
+      "properties": {
+        "schema_id": { "const": "idr.evidence_qualification_decision.v1" },
+        "schema_version": { "const": 1 },
+        "qualification_id": { "$ref": "#/$defs/uuid" },
+        "qualification_revision": { "$ref": "#/$defs/positiveWireU64" },
+        "tenant_id": { "$ref": "#/$defs/uuid" },
+        "fact_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "policy_ref": { "$ref": "#/$defs/exactPolicyRef" },
+        "decision_context_digest": { "$ref": "#/$defs/sha256Digest" },
+        "input_set_digest": { "$ref": "#/$defs/sha256Digest" },
+        "freshness": { "enum": ["FRESH", "NEAR_EXPIRY", "STALE", "UNKNOWN"] },
+        "lineage": { "enum": ["VALID", "BROKEN", "CYCLIC", "UNKNOWN"] },
+        "provenance": { "enum": ["VERIFIED", "PARTIAL", "INVALID", "UNKNOWN"] },
+        "supersession": { "enum": ["CURRENT", "SUPERSEDED", "REVOKED", "CONFLICT", "UNKNOWN"] },
+        "verdict": { "enum": ["ADMIT", "ADMIT_WITH_WARNING", "DENY"] },
+        "warning_codes": { "$ref": "#/$defs/reasonCodes" },
+        "denial_codes": { "$ref": "#/$defs/reasonCodes" },
+        "required_actions": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/requiredEvidenceAction" }
+        },
+        "evaluated_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "valid_until_ms": { "$ref": "#/$defs/timestampMs" },
+        "trusted_clock_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "qualification_digest": { "$ref": "#/$defs/sha256Digest" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "verdict": { "const": "ADMIT" } } },
+          "then": {
+            "properties": {
+              "warning_codes": { "maxItems": 0 },
+              "denial_codes": { "maxItems": 0 },
+              "required_actions": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "verdict": { "const": "ADMIT_WITH_WARNING" } } },
+          "then": {
+            "properties": { "warning_codes": { "minItems": 1 }, "denial_codes": { "maxItems": 0 } }
+          }
+        },
+        {
+          "if": { "properties": { "verdict": { "const": "DENY" } } },
+          "then": {
+            "properties": { "warning_codes": { "maxItems": 0 }, "denial_codes": { "minItems": 1 } }
+          }
+        }
+      ]
+    },
+    "admittedEvidenceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_ref", "qualification_ref", "qualification_digest", "verdict", "warning_codes", "entry_digest"],
+      "properties": {
+        "fact_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "qualification_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "qualification_digest": { "$ref": "#/$defs/sha256Digest" },
+        "verdict": { "enum": ["ADMIT", "ADMIT_WITH_WARNING"] },
+        "warning_codes": { "$ref": "#/$defs/reasonCodes" },
+        "entry_digest": { "$ref": "#/$defs/sha256Digest" }
+      }
+    },
+    "admittedEvidenceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id", "schema_version", "snapshot_id", "snapshot_version", "tenant_id",
+        "purpose", "decision_context_digest", "policy_ref", "entries", "entry_set_digest",
+        "aggregate_warning_codes", "created_at_ms", "valid_until_ms", "status_at_issue", "snapshot_digest"
+      ],
+      "properties": {
+        "schema_id": { "const": "idr.admitted_evidence_snapshot.v1" },
+        "schema_version": { "const": 1 },
+        "snapshot_id": { "$ref": "#/$defs/uuid" },
+        "snapshot_version": { "$ref": "#/$defs/positiveWireU64" },
+        "tenant_id": { "$ref": "#/$defs/uuid" },
+        "purpose": { "$ref": "#/$defs/schemaId" },
+        "decision_context_digest": { "$ref": "#/$defs/sha256Digest" },
+        "policy_ref": { "$ref": "#/$defs/exactPolicyRef" },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/admittedEvidenceEntry" }
+        },
+        "entry_set_digest": { "$ref": "#/$defs/sha256Digest" },
+        "aggregate_warning_codes": { "$ref": "#/$defs/reasonCodes" },
+        "created_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "valid_until_ms": { "$ref": "#/$defs/timestampMs" },
+        "status_at_issue": { "const": "SEALED" },
+        "snapshot_digest": { "$ref": "#/$defs/sha256Digest" }
+      }
+    },
+    "decisionEvidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id", "schema_version", "snapshot_ref", "policy_ref", "purpose",
+        "decision_context_digest", "accepted_warning_codes", "bound_at_ms", "binding_digest"
+      ],
+      "properties": {
+        "schema_id": { "const": "idr.decision_evidence_binding.v1" },
+        "schema_version": { "const": 1 },
+        "snapshot_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "policy_ref": { "$ref": "#/$defs/exactPolicyRef" },
+        "purpose": { "$ref": "#/$defs/schemaId" },
+        "decision_context_digest": { "$ref": "#/$defs/sha256Digest" },
+        "accepted_warning_codes": { "$ref": "#/$defs/reasonCodes" },
+        "bound_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "binding_digest": { "$ref": "#/$defs/sha256Digest" }
+      }
+    },
+    "completedEvidenceAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "kind", "target_ref", "acceptance_criteria_digest", "completion_proof_ref", "verified_at_ms"],
+      "properties": {
+        "action_id": { "$ref": "#/$defs/uuid" },
+        "kind": { "enum": ["REFRESH", "CORROBORATE", "SOURCE_REPAIR", "HUMAN_REVIEW"] },
+        "target_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "acceptance_criteria_digest": { "$ref": "#/$defs/sha256Digest" },
+        "completion_proof_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "verified_at_ms": { "$ref": "#/$defs/timestampMs" }
+      }
+    },
+    "preDispatchEvidenceRevalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id", "schema_version", "revalidation_id", "tenant_id", "action_ref",
+        "decision_ref", "binding_digest", "snapshot_ref", "policy_ref", "dispatch_nonce_digest",
+        "attempt", "lease_ref", "authority_state_digest", "checked_at_ms", "valid_until_ms",
+        "trusted_clock_ref", "result", "reason_codes", "required_actions", "completed_actions",
+        "revalidation_digest"
+      ],
+      "properties": {
+        "schema_id": { "const": "idr.pre_dispatch_evidence_revalidation.v1" },
+        "schema_version": { "const": 1 },
+        "revalidation_id": { "$ref": "#/$defs/uuid" },
+        "tenant_id": { "$ref": "#/$defs/uuid" },
+        "action_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "decision_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "binding_digest": { "$ref": "#/$defs/sha256Digest" },
+        "snapshot_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "policy_ref": { "$ref": "#/$defs/exactPolicyRef" },
+        "dispatch_nonce_digest": { "$ref": "#/$defs/sha256Digest" },
+        "attempt": { "$ref": "#/$defs/positiveWireU64" },
+        "lease_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "authority_state_digest": { "$ref": "#/$defs/sha256Digest" },
+        "checked_at_ms": { "$ref": "#/$defs/timestampMs" },
+        "valid_until_ms": { "$ref": "#/$defs/timestampMs" },
+        "trusted_clock_ref": { "$ref": "#/$defs/exactVersionRef" },
+        "result": { "enum": ["PASS", "BLOCK", "DENY"] },
+        "reason_codes": { "$ref": "#/$defs/reasonCodes" },
+        "required_actions": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/requiredEvidenceAction" }
+        },
+        "completed_actions": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/completedEvidenceAction" }
+        },
+        "revalidation_digest": { "$ref": "#/$defs/sha256Digest" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "result": { "const": "PASS" } } },
+          "then": {
+            "properties": { "reason_codes": { "maxItems": 0 }, "required_actions": { "maxItems": 0 } }
+          }
+        },
+        {
+          "if": { "properties": { "result": { "const": "BLOCK" } } },
+          "then": {
+            "properties": { "reason_codes": { "minItems": 1 }, "required_actions": { "minItems": 1 } }
+          }
+        },
+        {
+          "if": { "properties": { "result": { "const": "DENY" } } },
+          "then": { "properties": { "reason_codes": { "minItems": 1 } } }
+        }
+      ]
+    }
+  }
+}
