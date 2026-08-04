@@ -60,7 +60,8 @@ Each `ShadowReplayCaseV1` contains:
 - `source_classification`: `synthetic`, `audit_fixture`, or
   `redacted_export`;
 - pseudonymous `source_ref`;
-- expected outcome: `assessed` or a stable rejection code;
+- expected outcome: non-blocking `assessed`, `blocked`, or a stable protocol
+  rejection code;
 - optional reviewed divergence classification;
 - one structured replay envelope retained only for evaluation.
 
@@ -94,12 +95,16 @@ forwarded to another product component by the runner.
 ## Expected labels and divergence review
 
 Expected outcome labels are test or human-review assertions, not IDR inputs.
-They MUST NOT influence the IDR assessment. The runner compares them only after
-assessment to count:
+They MUST NOT influence the IDR assessment. A returned assessment with blocked
+action posture is a distinct `blocked` disposition and MUST NOT be counted as
+an allow. The runner compares labels only after assessment to count:
 
-- false allow: expected rejection, IDR assessed;
-- false reject: expected assessment, IDR rejected;
+- false allow: expected block or rejection, IDR produced a non-blocking
+  assessment;
+- false reject: expected non-blocking assessment, IDR blocked or rejected;
 - wrong rejection code: expected and actual rejection codes differ.
+- wrong blocking disposition: expected block but received protocol rejection,
+  or the reverse.
 
 Every host/IDR field divergence SHOULD carry one of the following reviewed
 classifications:
@@ -120,7 +125,7 @@ valid classification.
 
 - total, parsed, evaluated, and rejected envelopes;
 - privacy, parse, and observer failures;
-- assessed and protocol-rejected outcomes;
+- non-blocking assessed, blocked-assessment, and protocol-rejected outcomes;
 - expected matches, false allows, false rejects, and wrong rejection codes;
 - host comparisons, exact matches, divergences, and agreement basis points;
 - coordination-mode, action-posture, and run-state divergence counts;
@@ -136,6 +141,38 @@ valid classification.
 Latency and match rate are observations, not release thresholds. The synthetic
 smoke corpus deliberately contains one controlled host divergence and therefore
 MUST NOT be presented as representative product accuracy.
+
+## Synthetic boundary matrix
+
+The reference host maintains a compact, typed 40-case matrix that expands into
+the privacy-gated corpus format. It covers:
+
+- `low`, `medium`, `high`, and `critical` impact levels;
+- Fast Path eligible, ambiguous, incomplete, irreversible, authority-blocked,
+  and policy-blocked profiles;
+- decision-required, not-required, and conservative-unknown profiles;
+- response-only, response-then-act, confirmation, parallel read-only,
+  long-running acknowledgement, and progress-stream coordination;
+- missing response, actionless confirmation/authorization, unsafe parallel,
+  actionless stream, high-impact action without authorization, fact-impact
+  mismatch, and Fast Path/decision-runtime conflict rejections.
+
+The frozen selector exposes seven coordination enum values but has no branch
+that returns `act_then_respond`. The matrix MUST report that value as
+unobserved, not claim artificial IDR coverage. A reviewed host projection may
+exercise the corresponding divergence path without changing the IDR result.
+
+The current deterministic matrix expectation is 20 non-blocking assessments,
+6 blocked assessments, and 14 `INVALID_CONTRACT` rejections. All 40 labels are
+expected to match, all request digests are expected to be unique, and its
+domain-separated corpus digest is:
+
+```text
+sha256:d87ea7e9758e589566f27666d66d935116cab94226ed7ecfbc6280494d443038
+```
+
+These numbers prove deterministic branch mechanics only. They are not an
+accuracy, safety, fairness, or production-readiness score.
 
 ## Advancement rule
 

@@ -108,10 +108,12 @@ policy difference, or insufficient evidence.
 - divergences have human-reviewed classifications;
 - the frozen adapter still matches its Round 14 hashes.
 
-The synthetic smoke corpus and batch evaluator satisfy the mechanics of Gate A.
-They do not establish representative accuracy. Gate A remains open until a
-separately approved, representative corpus exists and its divergences are
-reviewed.
+The synthetic smoke corpus, 40-case boundary matrix, and batch evaluator
+satisfy the mechanics of Gate A. The matrix explicitly reports
+`act_then_respond` as unobserved because the frozen selector has no returning
+branch for that enum value. These artifacts do not establish representative
+accuracy. Gate A remains open until a separately approved, representative
+corpus exists and its divergences are reviewed.
 
 ### Gate B — Passive capture
 
