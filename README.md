@@ -61,6 +61,12 @@ for substitution, warning removal, unknown fields, `DENY` admission,
 prohibited personality inference, and stale pre-dispatch `PASS` reuse. These
 artifacts are specification tests, not production implementation.
 
+The representative-corpus intake conformance pack lives under
+`contracts/integrations/aegis-life/representative-corpus-intake/v1/`. It binds
+privacy approval, an exact structured-facts allowlist, retention/deletion
+policy, candidate lineage digests, and independent human labels. Its committed
+input is synthetic; it does not authorize an Aegis production exporter.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or

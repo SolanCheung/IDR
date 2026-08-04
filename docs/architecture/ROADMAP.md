@@ -75,6 +75,12 @@ Aegis Life's Round 14 `idr-aegis-adapter` remains byte-frozen. A separate
 to produce observe-only comparison records. It is outside the production path
 and exposes no production feature or effect interface.
 
+The specification-only representative-corpus intake pack under
+`contracts/integrations/aegis-life/representative-corpus-intake/v1/` defines
+privacy approval, allowlisting, retention/deletion, lineage, digest, and human
+label-binding gates. It uses synthetic controls only and does not authorize a
+production exporter or data access.
+
 ### Explicitly excluded
 
 - Setoka;

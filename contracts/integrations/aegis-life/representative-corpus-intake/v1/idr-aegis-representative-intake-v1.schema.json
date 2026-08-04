@@ -1,0 +1,688 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/representative-corpus-intake/v1/idr-aegis-representative-intake-v1.schema.json",
+  "title": "IDR Aegis Representative Corpus Intake V1",
+  "description": "Specification-only intake, redaction, lineage, label-binding, retention, and digest contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "intake_id",
+    "purpose",
+    "source_classification",
+    "source_system_ref",
+    "source_export_digest",
+    "exported_at_ms",
+    "approval",
+    "retention",
+    "redaction",
+    "candidates",
+    "label_set",
+    "bundle_digest"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "idr.aegis.representative-corpus-intake.v1"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "intake_id": {
+      "$ref": "#/$defs/token"
+    },
+    "purpose": {
+      "const": "offline_shadow_evaluation"
+    },
+    "source_classification": {
+      "enum": [
+        "synthetic_control",
+        "redacted_export"
+      ]
+    },
+    "source_system_ref": {
+      "$ref": "#/$defs/token"
+    },
+    "source_export_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "exported_at_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "approval": {
+      "$ref": "#/$defs/approval"
+    },
+    "retention": {
+      "$ref": "#/$defs/retention"
+    },
+    "redaction": {
+      "$ref": "#/$defs/redaction"
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "label_set": {
+      "$ref": "#/$defs/labelSet"
+    },
+    "bundle_digest": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[A-Za-z0-9_.:/-]+$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "run_id",
+        "turn_id",
+        "source_actor",
+        "actor_ref",
+        "primary_semantic_role",
+        "semantic_roles",
+        "content_ref",
+        "content_digest",
+        "correlation_ref",
+        "logical_time",
+        "schema_version"
+      ],
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "run_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source_actor": {
+          "enum": [
+            "user",
+            "host",
+            "agent",
+            "tool",
+            "external_system",
+            "human_approver",
+            "scheduler",
+            "policy_engine",
+            "device_environment"
+          ]
+        },
+        "actor_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "primary_semantic_role": {
+          "enum": [
+            "objective",
+            "intent",
+            "command",
+            "fact",
+            "observation",
+            "proposal",
+            "authorization",
+            "policy",
+            "result",
+            "feedback",
+            "time_trigger",
+            "security_signal"
+          ]
+        },
+        "semantic_roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "objective",
+              "intent",
+              "command",
+              "fact",
+              "observation",
+              "proposal",
+              "authorization",
+              "policy",
+              "result",
+              "feedback",
+              "time_trigger",
+              "security_signal"
+            ]
+          }
+        },
+        "content_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "correlation_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "logical_time": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "schema_version": {
+          "const": 1
+        }
+      }
+    },
+    "fastPathFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deterministic_command_match",
+        "required_parameters_complete",
+        "ambiguity_present",
+        "authority_context_valid",
+        "policy_allows_request",
+        "impact_level",
+        "reversible",
+        "depends_on_human_model"
+      ],
+      "properties": {
+        "deterministic_command_match": {
+          "type": "boolean"
+        },
+        "required_parameters_complete": {
+          "type": "boolean"
+        },
+        "ambiguity_present": {
+          "type": "boolean"
+        },
+        "authority_context_valid": {
+          "type": "boolean"
+        },
+        "policy_allows_request": {
+          "type": "boolean"
+        },
+        "impact_level": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "reversible": {
+          "type": "boolean"
+        },
+        "depends_on_human_model": {
+          "type": "boolean"
+        }
+      }
+    },
+    "decisionFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "multiple_viable_options",
+        "material_tradeoffs",
+        "evidence_conflict",
+        "impact_level",
+        "irreversible_result",
+        "affects_long_term_goal",
+        "host_user_interest_conflict",
+        "simple_lookup",
+        "unique_legal_operation",
+        "user_choice_already_explicit"
+      ],
+      "properties": {
+        "multiple_viable_options": {
+          "type": "boolean"
+        },
+        "material_tradeoffs": {
+          "type": "boolean"
+        },
+        "evidence_conflict": {
+          "type": "boolean"
+        },
+        "impact_level": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "irreversible_result": {
+          "type": "boolean"
+        },
+        "affects_long_term_goal": {
+          "type": "boolean"
+        },
+        "host_user_interest_conflict": {
+          "type": "boolean"
+        },
+        "simple_lookup": {
+          "type": "boolean"
+        },
+        "unique_legal_operation": {
+          "type": "boolean"
+        },
+        "user_choice_already_explicit": {
+          "type": "boolean"
+        }
+      }
+    },
+    "coordinationFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "response_planned",
+        "action_planned",
+        "explicit_confirmation_requested",
+        "authorization_required",
+        "action_is_read_only",
+        "long_running",
+        "stream_progress",
+        "safe_to_parallelize"
+      ],
+      "properties": {
+        "response_planned": {
+          "type": "boolean"
+        },
+        "action_planned": {
+          "type": "boolean"
+        },
+        "explicit_confirmation_requested": {
+          "type": "boolean"
+        },
+        "authorization_required": {
+          "type": "boolean"
+        },
+        "action_is_read_only": {
+          "type": "boolean"
+        },
+        "long_running": {
+          "type": "boolean"
+        },
+        "stream_progress": {
+          "type": "boolean"
+        },
+        "safe_to_parallelize": {
+          "type": "boolean"
+        }
+      }
+    },
+    "hostProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordination_mode",
+        "action_posture",
+        "next_run_state"
+      ],
+      "properties": {
+        "coordination_mode": {
+          "enum": [
+            "respond_only",
+            "act_then_respond",
+            "respond_then_act",
+            "respond_then_confirm_then_act",
+            "parallel",
+            "acknowledge_then_run",
+            "stream_progress_then_final"
+          ]
+        },
+        "action_posture": {
+          "enum": [
+            "none",
+            "blocked",
+            "planned",
+            "waiting_authorization"
+          ]
+        },
+        "next_run_state": {
+          "enum": [
+            "pending",
+            "running",
+            "waiting_input",
+            "waiting_authorization",
+            "waiting_dependency",
+            "succeeded",
+            "rejected",
+            "failed",
+            "cancelled",
+            "timed_out",
+            "invalidated"
+          ]
+        }
+      }
+    },
+    "replayEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_ref",
+        "assessment_request"
+      ],
+      "properties": {
+        "observation_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "assessment_request": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input",
+            "fast_path_facts",
+            "decision_facts",
+            "coordination_facts"
+          ],
+          "properties": {
+            "input": {
+              "$ref": "#/$defs/input"
+            },
+            "fast_path_facts": {
+              "$ref": "#/$defs/fastPathFacts"
+            },
+            "decision_facts": {
+              "$ref": "#/$defs/decisionFacts"
+            },
+            "coordination_facts": {
+              "$ref": "#/$defs/coordinationFacts"
+            }
+          }
+        },
+        "host_projection": {
+          "$ref": "#/$defs/hostProjection"
+        }
+      }
+    },
+    "expectedOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "const": "assessed"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "const": "blocked"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason_code"
+          ],
+          "properties": {
+            "status": {
+              "const": "rejected"
+            },
+            "reason_code": {
+              "$ref": "#/$defs/token"
+            }
+          }
+        }
+      ]
+    },
+    "divergenceReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "review_ref"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "host_defect",
+            "idr_defect",
+            "mapping_defect",
+            "policy_difference",
+            "insufficient_evidence"
+          ]
+        },
+        "review_ref": {
+          "$ref": "#/$defs/token"
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "review_ref",
+        "valid_from_ms",
+        "valid_until_ms",
+        "allows_representative_export",
+        "allows_raw_conversation",
+        "allows_credentials",
+        "allows_human_model",
+        "allows_personality_inference"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "review_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "valid_from_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "valid_until_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "allows_representative_export": {
+          "type": "boolean"
+        },
+        "allows_raw_conversation": {
+          "type": "boolean"
+        },
+        "allows_credentials": {
+          "type": "boolean"
+        },
+        "allows_human_model": {
+          "type": "boolean"
+        },
+        "allows_personality_inference": {
+          "type": "boolean"
+        }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_ref",
+        "delete_after_ms",
+        "deletion_receipt_required",
+        "raw_source_retained"
+      ],
+      "properties": {
+        "policy_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "delete_after_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "deletion_receipt_required": {
+          "type": "boolean"
+        },
+        "raw_source_retained": {
+          "type": "boolean"
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "status",
+        "review_ref",
+        "allowlisted_paths",
+        "findings"
+      ],
+      "properties": {
+        "profile_id": {
+          "$ref": "#/$defs/token"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "passed",
+            "failed"
+          ]
+        },
+        "review_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "allowlisted_paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "lineage_digest",
+        "captured_at_ms",
+        "replay_envelope",
+        "candidate_digest"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "#/$defs/token"
+        },
+        "lineage_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "captured_at_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "replay_envelope": {
+          "$ref": "#/$defs/replayEnvelope"
+        },
+        "candidate_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "label": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_digest",
+        "expected_outcome"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "#/$defs/token"
+        },
+        "candidate_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "expected_outcome": {
+          "$ref": "#/$defs/expectedOutcome"
+        },
+        "divergence_review": {
+          "$ref": "#/$defs/divergenceReview"
+        }
+      }
+    },
+    "labelSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "intake_id",
+        "review_ref",
+        "reviewed_at_ms",
+        "labels"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "intake_id": {
+          "$ref": "#/$defs/token"
+        },
+        "review_ref": {
+          "$ref": "#/$defs/token"
+        },
+        "reviewed_at_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "labels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        }
+      }
+    }
+  }
+}

@@ -49,4 +49,9 @@ The phased corpus, metric, privacy, failure-isolation, and advancement gates
 are defined in
 `docs/integrations/IDR-AEGIS-SHADOW-VALIDATION-PLAN.md`. The concrete offline
 corpus object and report contract are defined in
-`docs/integrations/IDR-AEGIS-OFFLINE-CORPUS-SPEC.md`.
+`docs/integrations/IDR-AEGIS-OFFLINE-CORPUS-SPEC.md`. The separate intake,
+redaction, retention, deletion, lineage, and human-label binding boundary is
+defined in
+`docs/integrations/IDR-AEGIS-REPRESENTATIVE-CORPUS-INTAKE-SPEC.md`, with
+synthetic conformance artifacts under
+`contracts/integrations/aegis-life/representative-corpus-intake/v1/`.

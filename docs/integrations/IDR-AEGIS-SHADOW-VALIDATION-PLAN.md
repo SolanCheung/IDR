@@ -115,6 +115,13 @@ branch for that enum value. These artifacts do not establish representative
 accuracy. Gate A remains open until a separately approved, representative
 corpus exists and its divergences are reviewed.
 
+Any future representative candidate must first satisfy
+[`IDR-AEGIS-REPRESENTATIVE-CORPUS-INTAKE-SPEC.md`](IDR-AEGIS-REPRESENTATIVE-CORPUS-INTAKE-SPEC.md),
+including externally authorized export, exact structured-facts allowlisting,
+retention/deletion controls, lineage and candidate digests, and independent
+human labels bound to those digests. The current intake fixture is synthetic
+and grants no access to Aegis production data.
+
 ### Gate B — Passive capture
 
 Requires a separate review. Capture MUST remain asynchronous and non-blocking,

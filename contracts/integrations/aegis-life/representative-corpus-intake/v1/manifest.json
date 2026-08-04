@@ -1,0 +1,104 @@
+{
+  "pack_id": "idr.aegis.representative-corpus-intake.conformance.v1",
+  "status": "SPECIFICATION_ONLY",
+  "specification": "docs/integrations/IDR-AEGIS-REPRESENTATIVE-CORPUS-INTAKE-SPEC.md",
+  "schema": "idr-aegis-representative-intake-v1.schema.json",
+  "verification_time_ms": 1200000,
+  "valid_cases": [
+    {
+      "id": "SYNTHETIC_CONTROL_GOLDEN_V1",
+      "path": "fixtures/valid/synthetic-control-intake.json",
+      "expected_candidate_digests": [
+        "sha256:cb046a87e6c1f404218e95e7ec369d1531005619a7f6527a9cbc13c907f458bb"
+      ],
+      "expected_bundle_digest": "sha256:583fe1a95cb2f2b2d621a3c7064160f647965af5756e8df5be2b29420da81954"
+    }
+  ],
+  "invalid_cases": [
+    {
+      "id": "BUNDLE_UNKNOWN_FIELD",
+      "path": "fixtures/invalid/bundle-unknown-field.json",
+      "expected_code": "UNKNOWN_FIELD"
+    },
+    {
+      "id": "APPROVAL_EXPIRED",
+      "path": "fixtures/invalid/approval-expired.json",
+      "expected_code": "APPROVAL_EXPIRED"
+    },
+    {
+      "id": "RETENTION_EXPIRED",
+      "path": "fixtures/invalid/retention-expired.json",
+      "expected_code": "RETENTION_EXPIRED"
+    },
+    {
+      "id": "PROHIBITED_RAW_TEXT",
+      "path": "fixtures/invalid/prohibited-raw-text.json",
+      "expected_code": "PROHIBITED_DATA_FIELD"
+    },
+    {
+      "id": "AUTHORITY_FIELD_INJECTION",
+      "path": "fixtures/invalid/authority-field-injection.json",
+      "expected_code": "AUTHORITY_FIELD_INJECTION"
+    },
+    {
+      "id": "REDACTION_NOT_PASSED",
+      "path": "fixtures/invalid/redaction-not-passed.json",
+      "expected_code": "REDACTION_NOT_PASSED"
+    },
+    {
+      "id": "ALLOWLIST_DRIFT",
+      "path": "fixtures/invalid/allowlist-drift.json",
+      "expected_code": "ALLOWLIST_DRIFT"
+    },
+    {
+      "id": "CANDIDATE_SUBSTITUTION",
+      "path": "fixtures/invalid/candidate-substitution.json",
+      "expected_code": "CANDIDATE_DIGEST_MISMATCH"
+    },
+    {
+      "id": "LABEL_DIGEST_SUBSTITUTION",
+      "path": "fixtures/invalid/label-digest-substitution.json",
+      "expected_code": "LABEL_DIGEST_MISMATCH"
+    },
+    {
+      "id": "LABEL_COVERAGE_MISSING",
+      "path": "fixtures/invalid/label-coverage-missing.json",
+      "expected_code": "LABEL_COVERAGE_MISMATCH"
+    },
+    {
+      "id": "DUPLICATE_LINEAGE",
+      "path": "fixtures/invalid/duplicate-lineage.json",
+      "expected_code": "DUPLICATE_LINEAGE"
+    },
+    {
+      "id": "INVALID_CAPTURE_TIME",
+      "path": "fixtures/invalid/invalid-capture-time.json",
+      "expected_code": "INVALID_TIME_ORDER"
+    },
+    {
+      "id": "BUNDLE_DIGEST_SUBSTITUTION",
+      "path": "fixtures/invalid/bundle-digest-substitution.json",
+      "expected_code": "BUNDLE_DIGEST_MISMATCH"
+    },
+    {
+      "id": "APPROVAL_RAW_CONVERSATION_ALLOWED",
+      "path": "fixtures/invalid/approval-raw-conversation.json",
+      "expected_code": "APPROVAL_NOT_VALID"
+    },
+    {
+      "id": "RAW_SOURCE_RETAINED",
+      "path": "fixtures/invalid/raw-source-retained.json",
+      "expected_code": "RETENTION_POLICY_VIOLATION"
+    },
+    {
+      "id": "DELETION_RECEIPT_NOT_REQUIRED",
+      "path": "fixtures/invalid/deletion-receipt-not-required.json",
+      "expected_code": "RETENTION_POLICY_VIOLATION"
+    },
+    {
+      "id": "DUPLICATE_CANDIDATE_ID",
+      "path": "fixtures/invalid/duplicate-candidate-id.json",
+      "expected_code": "DUPLICATE_CANDIDATE_ID"
+    }
+  ]
+}

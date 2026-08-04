@@ -1,0 +1,160 @@
+{
+  "schema_id": "idr.aegis.representative-corpus-intake.v1",
+  "schema_version": 1,
+  "intake_id": "intake:synthetic-control:v1",
+  "purpose": "offline_shadow_evaluation",
+  "source_classification": "synthetic_control",
+  "source_system_ref": "aegis:synthetic-control-fixture",
+  "source_export_digest": "sha256:940be5f1621ce7fd84bdc4eb4c1e7685255ce6b1931bae79c4662327a1c75110",
+  "exported_at_ms": 1000000,
+  "approval": {
+    "status": "approved",
+    "review_ref": "privacy-approval:synthetic-control:v1",
+    "valid_from_ms": 900000,
+    "valid_until_ms": 1500000,
+    "allows_representative_export": true,
+    "allows_raw_conversation": false,
+    "allows_credentials": false,
+    "allows_human_model": false,
+    "allows_personality_inference": false
+  },
+  "retention": {
+    "policy_ref": "retention:offline-shadow:v1",
+    "delete_after_ms": 2000000,
+    "deletion_receipt_required": false,
+    "raw_source_retained": false
+  },
+  "redaction": {
+    "profile_id": "idr-aegis-structured-facts-only-v1",
+    "status": "passed",
+    "review_ref": "redaction-review:synthetic-control:v1",
+    "allowlisted_paths": [
+      "observation_ref",
+      "assessment_request.input.event_id",
+      "assessment_request.input.run_id",
+      "assessment_request.input.turn_id",
+      "assessment_request.input.source_actor",
+      "assessment_request.input.actor_ref",
+      "assessment_request.input.primary_semantic_role",
+      "assessment_request.input.semantic_roles",
+      "assessment_request.input.content_ref",
+      "assessment_request.input.content_digest",
+      "assessment_request.input.correlation_ref",
+      "assessment_request.input.logical_time",
+      "assessment_request.input.schema_version",
+      "assessment_request.fast_path_facts.deterministic_command_match",
+      "assessment_request.fast_path_facts.required_parameters_complete",
+      "assessment_request.fast_path_facts.ambiguity_present",
+      "assessment_request.fast_path_facts.authority_context_valid",
+      "assessment_request.fast_path_facts.policy_allows_request",
+      "assessment_request.fast_path_facts.impact_level",
+      "assessment_request.fast_path_facts.reversible",
+      "assessment_request.fast_path_facts.depends_on_human_model",
+      "assessment_request.decision_facts.multiple_viable_options",
+      "assessment_request.decision_facts.material_tradeoffs",
+      "assessment_request.decision_facts.evidence_conflict",
+      "assessment_request.decision_facts.impact_level",
+      "assessment_request.decision_facts.irreversible_result",
+      "assessment_request.decision_facts.affects_long_term_goal",
+      "assessment_request.decision_facts.host_user_interest_conflict",
+      "assessment_request.decision_facts.simple_lookup",
+      "assessment_request.decision_facts.unique_legal_operation",
+      "assessment_request.decision_facts.user_choice_already_explicit",
+      "assessment_request.coordination_facts.response_planned",
+      "assessment_request.coordination_facts.action_planned",
+      "assessment_request.coordination_facts.explicit_confirmation_requested",
+      "assessment_request.coordination_facts.authorization_required",
+      "assessment_request.coordination_facts.action_is_read_only",
+      "assessment_request.coordination_facts.long_running",
+      "assessment_request.coordination_facts.stream_progress",
+      "assessment_request.coordination_facts.safe_to_parallelize",
+      "host_projection.coordination_mode",
+      "host_projection.action_posture",
+      "host_projection.next_run_state"
+    ],
+    "findings": 0
+  },
+  "candidates": [
+    {
+      "candidate_id": "candidate:synthetic-control:001",
+      "lineage_digest": "sha256:5d4ce6ed4f532d41daecc1f84f29a0cdfb042f027593424db1d4262943ba26fd",
+      "captured_at_ms": 950000,
+      "replay_envelope": {
+        "observation_ref": "shadow-observation:supplier-001",
+        "assessment_request": {
+          "input": {
+            "event_id": "2d8ec8e1-43c8-4c19-a4b4-e2d0af50d5eb",
+            "run_id": "11111111-1111-4111-8111-111111111111",
+            "turn_id": "22222222-2222-4222-8222-222222222222",
+            "source_actor": "user",
+            "actor_ref": "user:user-001",
+            "primary_semantic_role": "intent",
+            "semantic_roles": [
+              "intent",
+              "command"
+            ],
+            "content_ref": "content:supplier-comparison-request",
+            "content_digest": "sha256:4ab7f9b60d9fa79c1888d4d4bd2db34c97331e58a2fb40883af5c1a707f77a62",
+            "correlation_ref": "correlation:supplier-run-001",
+            "logical_time": 100,
+            "schema_version": 1
+          },
+          "fast_path_facts": {
+            "deterministic_command_match": false,
+            "required_parameters_complete": true,
+            "ambiguity_present": true,
+            "authority_context_valid": true,
+            "policy_allows_request": true,
+            "impact_level": "high",
+            "reversible": true,
+            "depends_on_human_model": false
+          },
+          "decision_facts": {
+            "multiple_viable_options": true,
+            "material_tradeoffs": true,
+            "evidence_conflict": false,
+            "impact_level": "high",
+            "irreversible_result": false,
+            "affects_long_term_goal": true,
+            "host_user_interest_conflict": false,
+            "simple_lookup": false,
+            "unique_legal_operation": false,
+            "user_choice_already_explicit": false
+          },
+          "coordination_facts": {
+            "response_planned": true,
+            "action_planned": true,
+            "explicit_confirmation_requested": true,
+            "authorization_required": true,
+            "action_is_read_only": false,
+            "long_running": false,
+            "stream_progress": false,
+            "safe_to_parallelize": false
+          }
+        },
+        "host_projection": {
+          "coordination_mode": "respond_then_confirm_then_act",
+          "action_posture": "waiting_authorization",
+          "next_run_state": "waiting_authorization"
+        }
+      },
+      "candidate_digest": "sha256:cb046a87e6c1f404218e95e7ec369d1531005619a7f6527a9cbc13c907f458bb"
+    }
+  ],
+  "label_set": {
+    "schema_version": 1,
+    "intake_id": "intake:synthetic-control:v1",
+    "review_ref": "human-review:synthetic-control:v1",
+    "reviewed_at_ms": 1100000,
+    "labels": [
+      {
+        "candidate_id": "candidate:synthetic-control:001",
+        "candidate_digest": "sha256:cb046a87e6c1f404218e95e7ec369d1531005619a7f6527a9cbc13c907f458bb",
+        "expected_outcome": {
+          "status": "assessed"
+        }
+      }
+    ]
+  },
+  "bundle_digest": "sha256:583fe1a95cb2f2b2d621a3c7064160f647965af5756e8df5be2b29420da81954"
+}
