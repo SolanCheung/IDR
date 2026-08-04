@@ -45,6 +45,12 @@ primary Aegis result never depends on validator success.
 
 ## Current phase: Offline Replay
 
+The versioned corpus format, privacy gate, label semantics, and metric contract
+are defined in
+[`IDR-AEGIS-OFFLINE-CORPUS-SPEC.md`](IDR-AEGIS-OFFLINE-CORPUS-SPEC.md).
+The reference host implementation lives in the separate Aegis Life
+`idr-aegis-shadow-validator` crate; it is not part of the frozen V1.3 runtime.
+
 Authorized inputs:
 
 - explicitly exported JSON replay envelopes;
@@ -101,6 +107,11 @@ policy difference, or insufficient evidence.
 - a versioned, privacy-reviewed corpus exists;
 - divergences have human-reviewed classifications;
 - the frozen adapter still matches its Round 14 hashes.
+
+The synthetic smoke corpus and batch evaluator satisfy the mechanics of Gate A.
+They do not establish representative accuracy. Gate A remains open until a
+separately approved, representative corpus exists and its divergences are
+reviewed.
 
 ### Gate B — Passive capture
 

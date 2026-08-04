@@ -47,4 +47,6 @@ authorize or alter the Aegis product path.
 
 The phased corpus, metric, privacy, failure-isolation, and advancement gates
 are defined in
-`docs/integrations/IDR-AEGIS-SHADOW-VALIDATION-PLAN.md`.
+`docs/integrations/IDR-AEGIS-SHADOW-VALIDATION-PLAN.md`. The concrete offline
+corpus object and report contract are defined in
+`docs/integrations/IDR-AEGIS-OFFLINE-CORPUS-SPEC.md`.
