@@ -1,0 +1,9 @@
+IDR source path: /Users/solan/projects/IDR
+Git work tree: absent
+Branch: unavailable
+HEAD: unavailable
+Signed tag: unavailable
+
+This source snapshot has no Git provenance. Package SHA256SUMS and the outer
+ZIP SHA-256 identify delivered bytes but do not establish authorship, review
+history or a signed repository chain.

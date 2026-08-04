@@ -1,0 +1,287 @@
+{
+  "$defs": {
+    "CandidateSubmissionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "enum": [
+            "canonical_input",
+            "context_snapshot",
+            "intent",
+            "decision",
+            "turn_coordination",
+            "response",
+            "action",
+            "action_admission_decision",
+            "execution_receipt",
+            "outcome",
+            "human_model_candidate",
+            "human_model_promotion_decision",
+            "human_model_assertion"
+          ]
+        },
+        "compatibility": {
+          "$ref": "#/$defs/WireCompatibilityV1"
+        },
+        "payload": true,
+        "policy_revision_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "purpose_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "run_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "scope_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "subject_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "tenant_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "turn_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "valid_from": {
+          "maximum": 253402300799,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "valid_until": {
+          "maximum": 253402300799,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "compatibility",
+        "candidate_id",
+        "candidate_kind",
+        "run_id",
+        "turn_id",
+        "subject_ref",
+        "tenant_ref",
+        "scope_ref",
+        "purpose_ref",
+        "policy_revision_ref",
+        "valid_from",
+        "valid_until",
+        "payload"
+      ],
+      "type": "object"
+    },
+    "ProductionProofClaimsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "assertion": true,
+        "audience_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "compatibility": {
+          "$ref": "#/$defs/WireCompatibilityV1"
+        },
+        "environment_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "expires_at": {
+          "maximum": 253402300799,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "issued_at": {
+          "maximum": 253402300799,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "issuer_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "nonce": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "not_before": {
+          "maximum": 253402300799,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "policy_revision_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "principal_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "proof_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "proof_kind": {
+          "enum": [
+            "caller_authentication",
+            "input_admission",
+            "context_snapshot",
+            "intent_fast_path_admission",
+            "decision_necessity_admission",
+            "turn_coordination_admission",
+            "response_policy",
+            "response_admission",
+            "authority",
+            "capability",
+            "policy",
+            "exact_authorization",
+            "action_admission",
+            "execution_permit",
+            "provider_receipt",
+            "outcome_observation",
+            "human_model_promotion",
+            "human_model_user_confirmation",
+            "human_model_correction"
+          ]
+        },
+        "purpose_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "scope_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "subject_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "subject_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "tenant_ref": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "trust_domain": {
+          "enum": [
+            "shadow",
+            "production"
+          ]
+        }
+      },
+      "required": [
+        "compatibility",
+        "proof_id",
+        "trust_domain",
+        "environment_ref",
+        "proof_kind",
+        "issuer_ref",
+        "subject_ref",
+        "subject_digest",
+        "audience_ref",
+        "tenant_ref",
+        "scope_ref",
+        "purpose_ref",
+        "policy_revision_ref",
+        "issued_at",
+        "not_before",
+        "expires_at",
+        "nonce",
+        "principal_digest",
+        "assertion"
+      ],
+      "type": "object"
+    },
+    "ProductionProofEnvelopeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "const": "ed25519"
+        },
+        "claims": {
+          "$ref": "#/$defs/ProductionProofClaimsV1"
+        },
+        "key_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "signature": {
+          "pattern": "^[0-9a-f]{128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claims",
+        "key_id",
+        "algorithm",
+        "signature"
+      ],
+      "type": "object"
+    },
+    "WireCompatibilityV1": {
+      "additionalProperties": false,
+      "properties": {
+        "critical_feature_flags": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 0,
+          "type": "array"
+        },
+        "minimum_reader_version": {
+          "const": 1
+        },
+        "schema_version": {
+          "const": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "minimum_reader_version",
+        "critical_feature_flags"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://idr.local/schema/production/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CandidateSubmissionV1"
+    },
+    {
+      "$ref": "#/$defs/ProductionProofEnvelopeV1"
+    }
+  ],
+  "title": "The Human-Centered Intent & Decision Runtime production wire V1",
+  "type": "object"
+}

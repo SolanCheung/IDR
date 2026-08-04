@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `idr_runtime::IdrTransactionalRepositoryV1`
+ --> tests/ui/malicious_repository.rs:1:5
+  |
+1 | use idr_runtime::IdrTransactionalRepositoryV1;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `IdrTransactionalRepositoryV1` in the root

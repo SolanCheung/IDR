@@ -1,0 +1,94 @@
+=== environment ===
+2026-07-28T14:34:06+00:00
+node v22.16.0
+npm 10.9.2
+python Python 3.13.5
+cargo unavailable
+
+=== TypeScript npm ci ===
+=== TypeScript tests without install ===
+
+> @idr/interaction-client@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# (node:739) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: product boundary accepts the shared canonical multi-role input
+ok 1 - product boundary accepts the shared canonical multi-role input
+  ---
+  duration_ms: 1.709046
+  type: 'test'
+  ...
+# Subtest: product boundary rejects a primary semantic role omitted from roles
+ok 2 - product boundary rejects a primary semantic role omitted from roles
+  ---
+  duration_ms: 0.403669
+  type: 'test'
+  ...
+# Subtest: product boundary rejects an unverified content digest
+ok 3 - product boundary rejects an unverified content digest
+  ---
+  duration_ms: 0.39077
+  type: 'test'
+  ...
+# Subtest: product boundary rejects actor-role impersonation
+ok 4 - product boundary rejects actor-role impersonation
+  ---
+  duration_ms: 0.223742
+  type: 'test'
+  ...
+# Subtest: product boundary parses but does not recompute Rust decisions
+ok 5 - product boundary parses but does not recompute Rust decisions
+  ---
+  duration_ms: 0.299024
+  type: 'test'
+  ...
+# Subtest: authorization submission is bound to exact action revision and digests
+ok 6 - authorization submission is bound to exact action revision and digests
+  ---
+  duration_ms: 0.353966
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 131.45635
+
+=== TypeScript typecheck availability ===
+SKIP: node_modules/.bin/tsc absent and npm ci timed out
+
+=== Python tests ===
+test_actor_role_impersonation_is_rejected (test_evaluator.EvaluationTests.test_actor_role_impersonation_is_rejected) ... ok
+test_confirmation_bypass_is_detected (test_evaluator.EvaluationTests.test_confirmation_bypass_is_detected) ... ok
+test_deleted_base_hypothesis_is_detected (test_evaluator.EvaluationTests.test_deleted_base_hypothesis_is_detected) ... ok
+test_golden_supplier_output_passes (test_evaluator.EvaluationTests.test_golden_supplier_output_passes) ... ok
+test_invalid_input_digest_is_rejected (test_evaluator.EvaluationTests.test_invalid_input_digest_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+
+=== additional tool check ===
+/opt/nvm/versions/node/v22.16.0/bin/tsc
+
+=== package integrity ===
+zip_entries= 449
+effective_files= 327
+unsafe_paths= 0
+symlinks= 0
+zip_sha256= 87983326ccbdcb59d286e2bb363dd8f6f3231637cb6a673cf1ab5585315e8b4a
+root_sha256sums_present= False
+
+=== TypeScript global tsc typecheck ===
+Version 5.8.3
+tests/contracts.test.ts(1,20): error TS2307: Cannot find module 'node:assert/strict' or its corresponding type declarations.
+tests/contracts.test.ts(2,30): error TS2307: Cannot find module 'node:fs' or its corresponding type declarations.
+tests/contracts.test.ts(3,18): error TS2307: Cannot find module 'node:test' or its corresponding type declarations.
+typecheck_exit=2

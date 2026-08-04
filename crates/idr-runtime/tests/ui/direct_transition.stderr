@@ -1,0 +1,11 @@
+error[E0603]: function `evaluate_authoritative_transition_v1` is private
+ --> tests/ui/direct_transition.rs:1:18
+  |
+1 | use idr_runtime::evaluate_authoritative_transition_v1;
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private function
+  |
+note: the function `evaluate_authoritative_transition_v1` is defined here
+ --> src/lib.rs
+  |
+  | pub use trust_chain::*;
+  |         ^^^^^^^^^^^

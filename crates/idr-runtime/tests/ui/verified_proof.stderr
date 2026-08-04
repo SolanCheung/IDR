@@ -1,0 +1,19 @@
+error: cannot construct `VerifiedProductionProofV1` with struct literal syntax due to private fields
+  --> tests/ui/verified_proof.rs:7:13
+   |
+ 7 |     let _ = VerifiedProductionProofV1 {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 8 |         proof_id: Uuid::new_v4(),
+   |         ------------------------ private field
+ 9 |         nonce: "00".repeat(32),
+   |         ---------------------- private field
+10 |         proof_kind: ProductionProofKindV1::ActionAdmission,
+   |         -------------------------------------------------- private field
+11 |         trust_root_version: 1,
+   |         --------------------- private field
+12 |         trust_root_digest: "11".repeat(32),
+   |         ---------------------------------- private field
+13 |         verified_at: 1,
+   |         -------------- private field
+   |
+   = note: ...and other private fields `trust_domain`, `environment_ref` and `expires_at` that were not provided

@@ -1,0 +1,226 @@
+=== Round 12 static trust-boundary checks ===
+
+[1] SECURITY DEFINER functions and search_path
+3---
+4--- The Runtime role has no DML privilege on authority base tables.  It writes
+5:-- only through identically shaped views whose SECURITY DEFINER bridge requires
+6--- a transaction-bound HMAC attestation opened by the Rust Orchestrator.
+7-
+--
+200-RETURNS uuid
+201-LANGUAGE plpgsql
+202:SECURITY DEFINER
+203:SET search_path FROM CURRENT
+204-AS $$
+205-DECLARE
+--
+275-RETURNS idr_transition_attestations_v7
+276-LANGUAGE plpgsql
+277:SECURITY DEFINER
+278:SET search_path FROM CURRENT
+279-AS $$
+280-DECLARE
+--
+411-RETURNS trigger
+412-LANGUAGE plpgsql
+413:SECURITY DEFINER
+414:SET search_path FROM CURRENT
+415-AS $$
+416-DECLARE
+
+migration_pg_temp_occurrences=0
+runtime_pg_temp_occurrences=0
+attack_test_pg_temp_files=0
+
+[2] Runtime TEMP privilege enforcement
+544:                    has_database_privilege(current_user, current_database(), 'CREATE')
+TEMP_check_count=0
+
+[3] Role-membership authority checks
+540:                    pg_has_role(current_user, required_role.role_name, 'USAGE')
+632:                          AND pg_has_role(current_user, relation.relowner, 'USAGE')
+MEMBER_check_count=0
+SET_check_count=0
+
+[4] HMAC comparisons
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:249:    IF expected_mac IS DISTINCT FROM lower(claimed_mac) THEN
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:302:    ADD COLUMN receipt_mac text NOT NULL CHECK (length(receipt_mac) = 64);
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2036:    fn command_receipt_mac(
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2065:            "SELECT receipt, receipt_mac, idr_attestation_id
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2076:            let stored_mac: String = row.try_get("receipt_mac").map_err(repository_error)?;
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2081:                || self.command_receipt_mac(&receipt)? != stored_mac
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2156:                    command_digest, receipt, receipt_mac, idr_attestation_id
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2206:            let stored_receipt_mac: String =
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2207:                row.try_get("receipt_mac").map_err(repository_error)?;
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2208:            if self.command_receipt_mac(&receipt)? != stored_receipt_mac {
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2275:                    || stored_digest != computed_digest
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2556:        let receipt_mac = self.command_receipt_mac(&receipt)?;
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2560:                event_sequence, receipt, receipt_mac, tenant_ref, actor_ref, caller_ref,
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:2571:        .bind(receipt_mac)
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:4065:    if stored_digest != key.digest() {
+
+[5] Key lifecycle and protected-file loader
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:54:    retired_at timestamptz,
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:55:    CHECK (retired_at IS NULL OR retired_at >= activated_at)
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:92:    RAISE EXCEPTION 'IDR Orchestrator attestations and keys are immutable';
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql:221:       AND retired_at IS NULL;
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:69:        let metadata = std::fs::metadata(&path).map_err(|error| {
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:76:                "Orchestrator attestation key must be a regular mode-0600 file".to_string(),
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:79:        let encoded = std::fs::read_to_string(&path).map_err(|error| {
+/mnt/data/idr_round12_extract/IDR-V1.3-trust-chain-closure-round12-2026-07-30/IDR/crates/idr-runtime/src/postgres_authority.rs:4059:          WHERE key_version = $1 AND retired_at IS NULL",
+
+[6] Connection search_path
+  4014	async fn connect_pool_for_schema(
+  4015	    database_url: &str,
+  4016	    schema: &str,
+  4017	) -> Result<PgPool, IdrRuntimeErrorV1> {
+  4018	    let connect_options = PgConnectOptions::from_str(database_url)
+  4019	        .map_err(repository_error)?
+  4020	        .disable_statement_logging();
+  4021	    let search_path = schema.to_string();
+  4022	    PgPoolOptions::new()
+  4023	        .max_connections(10)
+  4024	        .after_connect(move |connection, _metadata| {
+  4025	            let search_path = search_path.clone();
+  4026	            Box::pin(async move {
+  4027	                sqlx::query("SELECT set_config('search_path', $1, false)")
+  4028	                    .bind(search_path)
+  4029	                    .execute(connection)
+  4030	                    .await?;
+  4031	                Ok(())
+  4032	            })
+  4033	        })
+  4034	        .connect_with(connect_options)
+  4035	        .await
+  4036	        .map_err(repository_error)
+
+[7] External anchor commit/publish window
+  2788	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2789	        }
+  2790	        let (receipt, checkpoint) = self.transact_inner(&self.authority, &command).await?;
+  2791	        if receipt.idempotent_replay {
+  2792	            return Ok(receipt);
+  2793	        }
+  2794	        self.security.anchor_backend.publish(&checkpoint).await?;
+  2795	        let publication_command_digest = idr_protocol::production::canonical_digest_v1(
+  2796	            "idr-checkpoint-publication-command-v1",
+  2797	            &json!({
+  2798	                "command_id": receipt.command_id,
+  2799	                "attestation_id": receipt.attestation_id,
+  2800	                "checkpoint": checkpoint,
+  2801	            }),
+  2802	        )
+  2803	        .map_err(IdrRuntimeErrorV1::from)?;
+  2804	        let publication_transition_digest = idr_protocol::production::canonical_digest_v1(
+  2805	            "idr-checkpoint-publication-transition-v1",
+  2806	            &json!({
+  2807	                "checkpoint_id": checkpoint.checkpoint_id,
+  2808	                "audit_sequence": checkpoint.audit_sequence,
+  2809	                "chain_root": checkpoint.chain_root,
+  2810	                "record_set_root": checkpoint.record_set_root,
+  2811	                "execution_state_root": checkpoint.execution_state_root,
+  2812	            }),
+  2813	        )
+  2814	        .map_err(IdrRuntimeErrorV1::from)?;
+  2815	        let mut publication_transaction = self.pool.begin().await.map_err(repository_error)?;
+  2816	        publication_transaction
+  2817	            .execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+  2818	            .await
+  2819	            .map_err(repository_error)?;
+  2820	        self.open_orchestrator_attestation(
+  2821	            &mut publication_transaction,
+  2822	            "checkpoint_publication",
+  2823	            receipt.command_id,
+  2824	            ZERO_RUN_ID_V1,
+  2825	            &checkpoint.tenant_ref,
+  2826	            receipt.aggregate_version,
+  2827	            receipt.aggregate_version,
+  2828	            &publication_command_digest,
+  2829	            &publication_transition_digest,
+  2830	        )
+  2831	        .await?;
+  2832	        sqlx::query(
+  2833	            "UPDATE idr_audit_checkpoints
+  2834	             SET published_at = clock_timestamp()
+  2835	             WHERE checkpoint_id = $1",
+  2836	        )
+  2837	        .bind(checkpoint.checkpoint_id)
+  2838	        .execute(&mut *publication_transaction)
+  2839	        .await
+  2840	        .map_err(repository_error)?;
+  2841	        publication_transaction
+  2842	            .commit()
+  2843	            .await
+  2844	            .map_err(repository_error)?;
+  2845	        Ok(receipt)
+
+[8] Caller-provided Trust Root provider and rotation surface
+   140	pub trait CurrentTrustRootProviderV1: Send + Sync {
+   141	    fn current_snapshot(&self) -> Result<TrustRootSnapshotV1, IdrRuntimeErrorV1>;
+   142	}
+   143	
+   144	#[derive(Clone)]
+   145	pub struct RotatingTrustRootProviderV1 {
+   146	    current: Arc<RwLock<TrustRootSnapshotV1>>,
+   147	}
+   148	
+   149	impl RotatingTrustRootProviderV1 {
+   150	    pub fn new(snapshot: TrustRootSnapshotV1) -> Self {
+   151	        Self {
+   152	            current: Arc::new(RwLock::new(snapshot)),
+   153	        }
+   154	    }
+   155	
+   156	    pub fn rotate(&self, snapshot: TrustRootSnapshotV1) -> Result<(), IdrRuntimeErrorV1> {
+   157	        let mut current = self
+   158	            .current
+   159	            .write()
+   160	            .map_err(|_| IdrRuntimeErrorV1::Repository("Trust Root lock poisoned".to_string()))?;
+   161	        if snapshot.root_version() <= current.root_version() {
+   162	            return Err(IdrRuntimeErrorV1::Repository(
+   163	                "Trust Root version must advance monotonically".to_string(),
+   164	            ));
+   165	        }
+   166	        *current = snapshot;
+   167	        Ok(())
+   168	    }
+   169	}
+   170	
+   171	impl CurrentTrustRootProviderV1 for RotatingTrustRootProviderV1 {
+   172	    fn current_snapshot(&self) -> Result<TrustRootSnapshotV1, IdrRuntimeErrorV1> {
+   173	        self.current
+   174	            .read()
+   175	            .map(|snapshot| snapshot.clone())
+   176	            .map_err(|_| IdrRuntimeErrorV1::Repository("Trust Root lock poisoned".to_string()))
+   177	    }
+   178	}
+   179	
+   180	#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+   181	#[serde(deny_unknown_fields)]
+   182	pub struct AuditCheckpointV1 {
+
+[9] Round 12 attack-test vocabulary gaps
+pg_temp_test_files=0
+TEMPORARY_test_files=0
+SET ROLE_test_files=0
+NOINHERIT_test_files=0
+constant_time_test_files=0
+key rotation_test_files=0
+
+[10] Static exploit sequence for the new P0 (not executed in this environment)
+Precondition: compromised Runtime database login; database TEMPORARY privilege remains available.
+
+BEGIN;
+CREATE TEMP TABLE idr_orchestrator_attestation_secrets_v7 (...same columns...);
+INSERT INTO idr_orchestrator_attestation_secrets_v7 VALUES (...attacker key...);
+CREATE TEMP TABLE idr_transition_attestations_v7 (...same columns...);
+SELECT txid_current(), pg_backend_pid();
+-- compute public HMAC material client-side with the attacker key
+SELECT trusted_schema.idr_open_attested_transition_v7(...attacker MAC...);
+INSERT INTO trusted_schema.idr_runs (...forged authoritative row...);
+COMMIT;
+
+Why the chain resolves:
+- SET search_path FROM CURRENT stores only the trusted schema, but pg_temp is still implicitly searched first when not explicitly listed.
+- The opener and current-attestation functions use unqualified secret/attestation table names.
+- The bridge uses SECURITY DEFINER and dynamic unqualified *_authority_v7 target names; without a temp shadow for those targets, the owner-only permanent base table is selected.

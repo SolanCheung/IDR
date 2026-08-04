@@ -1,0 +1,43 @@
+{
+  "canonical_value": {
+    "escaped": "\n\t\"\\",
+    "integer": 9007199254740991,
+    "unicode": "意图与决策",
+    "": "private-use",
+    "😀": "astral-first-under-utf16"
+  },
+  "digest_domain": "idr-cross-language-golden-v1",
+  "expected_canonical_utf8": "{\"escaped\":\"\\n\\t\\\"\\\\\",\"integer\":9007199254740991,\"unicode\":\"意图与决策\",\"😀\":\"astral-first-under-utf16\",\"\":\"private-use\"}",
+  "expected_digest": "d39569f62d67d8922f734b86379f2a8f9cff71be770a4ac024a5e017b8751d9c",
+  "expected_signing_utf8": "[\"idr-production-proof-v1\",{\"assertion\":{\"outcome\":\"admit\"},\"audience_ref\":\"audience:idr:shadow:golden\",\"compatibility\":{\"critical_feature_flags\":[],\"minimum_reader_version\":1,\"schema_version\":1},\"environment_ref\":\"environment:idr:shadow:golden\",\"expires_at\":1800000300,\"issued_at\":1800000000,\"issuer_ref\":\"issuer:golden\",\"nonce\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"not_before\":1800000000,\"policy_revision_ref\":\"policy:idr:v1\",\"principal_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"proof_id\":\"018f22e2-4fd1-7a11-8a44-7c58f9bc0011\",\"proof_kind\":\"input_admission\",\"purpose_ref\":\"purpose:conformance\",\"scope_ref\":\"scope:interaction\",\"subject_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"subject_ref\":\"candidate:018f22e2-4fd1-7a11-8a44-7c58f9bc0022\",\"tenant_ref\":\"tenant:golden\",\"trust_domain\":\"shadow\"}]",
+  "proof_claims": {
+    "assertion": {
+      "outcome": "admit"
+    },
+    "audience_ref": "audience:idr:shadow:golden",
+    "compatibility": {
+      "critical_feature_flags": [],
+      "minimum_reader_version": 1,
+      "schema_version": 1
+    },
+    "environment_ref": "environment:idr:shadow:golden",
+    "expires_at": 1800000300,
+    "issued_at": 1800000000,
+    "issuer_ref": "issuer:golden",
+    "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+    "not_before": 1800000000,
+    "policy_revision_ref": "policy:idr:v1",
+    "principal_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+    "proof_id": "018f22e2-4fd1-7a11-8a44-7c58f9bc0011",
+    "proof_kind": "input_admission",
+    "purpose_ref": "purpose:conformance",
+    "scope_ref": "scope:interaction",
+    "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "subject_ref": "candidate:018f22e2-4fd1-7a11-8a44-7c58f9bc0022",
+    "tenant_ref": "tenant:golden",
+    "trust_domain": "shadow"
+  },
+  "public_key_hex": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+  "schema_version": 1,
+  "signature_hex": "9847f247d701dba2308caad5ead4bbec8382f9c6e23c24a7840b25accfbd6791ea7f1fad5ed5a59f9d7c618d0c528548b230d263e03cd46e93abb9aa9b2b2105"
+}

@@ -1,0 +1,28 @@
+IDR V1.3 Round 10 independent integrity verification
+
+=== outer archive ===
+94410cd65d9733b58eb8cc3cbf81c66c0ece422c9e00a7aca66b5f1a561d1685  /mnt/data/IDR-V1.3-trust-chain-closure-round10-2026-07-30.zip
+=== submitted sha256 file ===
+94410cd65d9733b58eb8cc3cbf81c66c0ece422c9e00a7aca66b5f1a561d1685  /Users/solan/Downloads/IDR-V1.3-trust-chain-closure-round10-2026-07-30.zip
+
+=== zip safety ===
+ZIP_ENTRIES=1052
+PATH_TRAVERSAL=0
+SYMLINKS=0
+
+=== package manifest ===
+MANIFEST_ENTRIES=869
+MANIFEST_OK=869
+MANIFEST_NON_OK_LINES=0
+REGULAR_FILES_EXCLUDING_POST_AUDIT_NODE_MODULES=876
+
+=== local tool availability ===
+cargo=unavailable
+rustc=unavailable
+psql=unavailable
+node=v22.16.0
+npm=10.9.2
+python=Python 3.13.5
+
+=== independent package secret scan ===
+{"count":0,"findings":[]}

@@ -1,0 +1,11 @@
+error[E0603]: struct `OrchestratorAuthorityV1` is private
+ --> tests/ui/store_authority.rs:1:18
+  |
+1 | use idr_runtime::OrchestratorAuthorityV1;
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^ private struct
+  |
+note: the struct `OrchestratorAuthorityV1` is defined here
+ --> src/lib.rs
+  |
+  | pub use trust_chain::*;
+  |         ^^^^^^^^^^^

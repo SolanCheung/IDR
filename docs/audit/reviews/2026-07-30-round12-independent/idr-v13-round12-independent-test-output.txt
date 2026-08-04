@@ -1,0 +1,150 @@
+
+=== tool versions ===
+v22.16.0
+10.9.2
+Python 3.13.5
+
+EXIT_STATUS=0
+
+=== TypeScript clean offline install ===
+
+added 3 packages, and audited 4 packages in 1s
+
+found 0 vulnerabilities
+
+EXIT_STATUS=0
+
+=== TypeScript tests ===
+
+> @idr/interaction-client@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# (node:1376) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: product boundary accepts the shared canonical multi-role input
+ok 1 - product boundary accepts the shared canonical multi-role input
+  ---
+  duration_ms: 2.967845
+  type: 'test'
+  ...
+# Subtest: product boundary normalizes UUIDs to canonical lowercase
+ok 2 - product boundary normalizes UUIDs to canonical lowercase
+  ---
+  duration_ms: 0.176453
+  type: 'test'
+  ...
+# Subtest: product boundary rejects a primary semantic role omitted from roles
+ok 3 - product boundary rejects a primary semantic role omitted from roles
+  ---
+  duration_ms: 0.548096
+  type: 'test'
+  ...
+# Subtest: product boundary rejects an unverified content digest
+ok 4 - product boundary rejects an unverified content digest
+  ---
+  duration_ms: 0.196422
+  type: 'test'
+  ...
+# Subtest: product boundary rejects actor-role impersonation
+ok 5 - product boundary rejects actor-role impersonation
+  ---
+  duration_ms: 0.252456
+  type: 'test'
+  ...
+# Subtest: product boundary rejects unknown canonical input fields
+ok 6 - product boundary rejects unknown canonical input fields
+  ---
+  duration_ms: 0.126328
+  type: 'test'
+  ...
+# Subtest: product boundary parses but does not recompute Rust decisions
+ok 7 - product boundary parses but does not recompute Rust decisions
+  ---
+  duration_ms: 0.392824
+  type: 'test'
+  ...
+# Subtest: assessment parser rejects contradictory cross-field states
+ok 8 - assessment parser rejects contradictory cross-field states
+  ---
+  duration_ms: 0.175291
+  type: 'test'
+  ...
+# Subtest: blocked assessment is rejected rather than marked succeeded
+ok 9 - blocked assessment is rejected rather than marked succeeded
+  ---
+  duration_ms: 0.529057
+  type: 'test'
+  ...
+# Subtest: authorization candidate is bound to exact action revision and digests
+ok 10 - authorization candidate is bound to exact action revision and digests
+  ---
+  duration_ms: 0.673211
+  type: 'test'
+  ...
+# (node:1378) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated TypeScript matches Rust canonical and digest golden vectors
+ok 11 - generated TypeScript matches Rust canonical and digest golden vectors
+  ---
+  duration_ms: 2.866554
+  type: 'test'
+  ...
+# Subtest: generated TypeScript proof parser rejects unknown fields
+ok 12 - generated TypeScript proof parser rejects unknown fields
+  ---
+  duration_ms: 1.229309
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 210.85994
+
+EXIT_STATUS=0
+
+=== TypeScript typecheck ===
+
+> @idr/interaction-client@0.1.0 typecheck
+> tsc --noEmit
+
+
+EXIT_STATUS=0
+
+=== Python tests ===
+Spreadsheet runtime warmup failed during python startup
+Traceback (most recent call last):
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/patches/warm_spreadsheet_runtime_on_startup.py", line 26, in warm_spreadsheet_runtime_on_startup
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/spreadsheet_warmup.py", line 785, in warm_spreadsheet_runtime
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/spreadsheet_warmup.py", line 720, in _warm_feature_flows
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/spreadsheet_warmup.py", line 704, in _warm_collaboration_flows
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/generated/interface/models.py", line 30820, in hydrate_crdt_from_proto
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/rpc/remote.py", line 749, in __call__
+  File "/tmp/tmp.yTcnQsZYiA/artifact_tool_v2-2.8.4/artifact_tool/rpc/client.py", line 150, in call
+artifact_tool.rpc.client.RemoteError: hydrateCrdtFromProto requires an empty collaborative document.
+test_actor_role_impersonation_is_rejected (test_evaluator.EvaluationTests.test_actor_role_impersonation_is_rejected) ... ok
+test_confirmation_bypass_is_detected (test_evaluator.EvaluationTests.test_confirmation_bypass_is_detected) ... ok
+test_deleted_base_hypothesis_is_detected (test_evaluator.EvaluationTests.test_deleted_base_hypothesis_is_detected) ... ok
+test_golden_supplier_output_passes (test_evaluator.EvaluationTests.test_golden_supplier_output_passes) ... ok
+test_invalid_input_digest_is_rejected (test_evaluator.EvaluationTests.test_invalid_input_digest_is_rejected) ... ok
+test_logical_time_must_fit_the_cross_language_wire_range (test_evaluator.EvaluationTests.test_logical_time_must_fit_the_cross_language_wire_range) ... ok
+test_unknown_input_fields_are_rejected (test_evaluator.EvaluationTests.test_unknown_input_fields_are_rejected) ... ok
+test_python_matches_rust_canonical_digest_and_signature_vectors (test_production_conformance.ProductionConformanceTests.test_python_matches_rust_canonical_digest_and_signature_vectors) ... ok
+test_python_observation_parser_rejects_unknown_fields (test_production_conformance.ProductionConformanceTests.test_python_observation_parser_rejects_unknown_fields) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.159s
+
+OK
+
+EXIT_STATUS=0
+
+=== IDR source secret scan ===
+{"count":0,"findings":[]}
+
+EXIT_STATUS=0

@@ -1,0 +1,1353 @@
+Human-Centered Intent & Decision Runtime V1.3
+0. 这套系统解决什么问题
+很多 Agent 不够智能，不只是因为模型能力不足，而是因为它不知道：
+	•	当前是谁在说话；
+	•	用户真正想完成什么；
+	•	用户为什么这样问；
+	•	当前是查询、探索还是准备决策；
+	•	用户过去怎样理解信息和作出选择；
+	•	是否应该回答、追问、质疑、建议或执行；
+	•	执行以后结果是否符合用户目标。
+这套系统的目标是：
+持续维护一个可纠正的用户模型，把用户表达、业务事实和历史上下文转化为结构化意图、决策、回应和行动，并根据真实结果继续学习。
+它不是一个单体 LLM，也不是一个 UI 引擎，而是一套由确定性 Runtime、LLM认知服务、契约和治理系统组成的后端基础设施。
+
+一、整体结构
+系统分为四个平面。
+┌─────────────────────────────────────────────────────────────┐
+│ 1. CONTROL PLANE                                            │
+│ Orchestration Runtime                                       │
+│ 控制整个流程怎样运行                                         │
+└─────────────────────────────────────────────────────────────┘
+                         ↕
+
+┌─────────────────────────────────────────────────────────────┐
+│ 2. DATA PLANE                                               │
+│ 输入 → 上下文 → 意图 → 决策 → 回应/行动 → 执行 → 学习        │
+└─────────────────────────────────────────────────────────────┘
+                         ↕
+
+┌─────────────────────────────────────────────────────────────┐
+│ 3. GOVERNANCE & OBSERVABILITY PLANE                         │
+│ Audit / Policy / Consent / Authority / Privacy / Security    │
+└─────────────────────────────────────────────────────────────┘
+                         ↕
+
+┌─────────────────────────────────────────────────────────────┐
+│ 4. COGNITIVE SERVICES                                       │
+│ LLM / 小模型 / 检索 / Embedding / Reranker / 结构化抽取       │
+└─────────────────────────────────────────────────────────────┘
+四者的关系：
+Cognitive Services 负责提出认知候选
+Data Plane 负责处理业务对象
+Control Plane 负责控制执行流程
+Governance Plane 负责约束和记录
+核心原则：
+LLM负责认知
+Guard负责裁决
+Orchestrator负责流程
+Contract负责边界
+Audit负责追溯
+Human负责高影响决定
+
+二、完整架构图
+══════════════════════════════════════════════════════════════════════
+                         CONTROL PLANE
+══════════════════════════════════════════════════════════════════════
+
+┌────────────────────────────────────────────────────────────────────┐
+│ ORCHESTRATION RUNTIME                                              │
+│                                                                    │
+│ • 管理 Run / Turn / Step 状态                                      │
+│ • 控制模块调用顺序                                                  │
+│ • 管理 Contract 版本和依赖                                         │
+│ • 等待用户输入、选择和授权                                          │
+│ • 管理并行、超时、重试、取消                                        │
+│ • 管理中断、恢复和失败处理                                          │
+│ • 新事实出现时执行失效传播和局部重算                                │
+│ • 执行 Turn Coordination Plan                                     │
+└────────────────────────────────────────────────────────────────────┘
+                    ↕ Command / State Event
+
+
+══════════════════════════════════════════════════════════════════════
+                           DATA PLANE
+══════════════════════════════════════════════════════════════════════
+
+┌────────────────────────────────────────────────────────────────────┐
+│ 1. INPUT SOURCES                                                   │
+│                                                                    │
+│ User / Host / Agent / Tool / External System                       │
+│ Human Approver / Scheduler / Policy Engine / Device Environment    │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 2. PROTOCOL GATEWAY                                                │
+│                                                                    │
+│ 把所有输入转换为 Canonical Input Event                             │
+│ 同时标记：                                                          │
+│ • Source Actor：谁发出的                                           │
+│ • Semantic Role：输入代表什么                                      │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 3. CONTEXT FABRIC                                                  │
+│                                                                    │
+│ Authority Context：身份、角色、权限、授权                           │
+│ Domain Context：业务对象、权威事实、领域规则                        │
+│ Session Context：当前任务、焦点、设备、时间和临时状态                │
+└───────────────────────────────┬────────────────────────────────────┘
+                                │
+                ┌───────────────┴────────────────┐
+                ▼                                ▼
+┌───────────────────────────────┐  ┌────────────────────────────────┐
+│ 4. HUMAN MODEL RUNTIME        │  │ 5. INTENT FAST PATH GUARD     │
+│                               │  │                                │
+│ Interaction Profile           │  │ 确定性代码 + 版本化规则表       │
+│ Cognitive Interaction Profile │  │                                │
+│ Personal Decision Model       │  │ ALLOW_FAST_PATH                │
+│ Goals & Constraints           │  │ UNKNOWN                        │
+│ Decision History              │  │ BLOCK                          │
+│ Outcome History               │  │                                │
+│ User Corrections              │  │ LLM不能授权短路                │
+└───────────────────────────────┘  └───────────────┬────────────────┘
+                                                   │
+                                ┌──────────────────┴──────────────┐
+                                ▼                                 ▼
+                      FAST PATH                            FULL PATH
+                                │                                 │
+                                ▼                                 ▼
+┌───────────────────────────────┐  ┌────────────────────────────────┐
+│ 6A. DETERMINISTIC INTENT      │  │ 6B. BASE INTENT RESOLUTION    │
+│     RESOLUTION                │  │                                │
+│                               │  │ 不读取长期 Human Model          │
+│ 命令注册表 + Schema校验        │  │ 生成多意图假设                  │
+│ 生成确定性意图                 │  │ 识别证据、冲突、歧义和置信度    │
+└───────────────┬───────────────┘  └───────────────┬────────────────┘
+                │                                  ▼
+                │                  ┌────────────────────────────────┐
+                │                  │ 7. HUMAN MODEL PERSONALIZATION │
+                │                  │                                │
+                │                  │ 重排基础意图假设                │
+                │                  │ 补充个性化意图假设              │
+                │                  │ 检测历史模型与当前表达冲突      │
+                │                  │ 不得删除Base Hypotheses         │
+                │                  └───────────────┬────────────────┘
+                └──────────────────────────────────┘
+                                                   ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 8. INTENT CONTRACT                                                 │
+│                                                                    │
+│ 用户明确表达、基础意图假设、个性化假设、置信度、证据、歧义、冲突   │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 9. DECISION NECESSITY GUARD                                       │
+│                                                                    │
+│ NOT_REQUIRED                                                       │
+│ REQUIRED                                                           │
+│ UNKNOWN → 保守进入 Decision Runtime                                │
+└─────────────────┬───────────────────────────────┬──────────────────┘
+                  │ REQUIRED                      │ NOT_REQUIRED
+                  ▼                               │
+┌────────────────────────────────────┐            │
+│ 10. DECISION COLLABORATION RUNTIME │            │
+│                                    │            │
+│ 决策框定                           │            │
+│ 目标与约束                         │            │
+│ 评价标准                           │            │
+│ 方案生成和补全                     │            │
+│ 证据、主张与冲突图                 │            │
+│ 风险、不确定性和可逆性             │            │
+│ 追问、质疑、比较和推荐             │            │
+│ 授权边界                           │            │
+└─────────────────┬──────────────────┘            │
+                  ▼                               │
+┌────────────────────────────────────┐            │
+│ 11. DECISION CONTRACT              │            │
+│                                    │            │
+│ objective / constraints            │            │
+│ criteria / options                 │            │
+│ evidence / conflicts               │            │
+│ risks / uncertainty                │            │
+│ recommendation                     │            │
+│ required_user_inputs               │            │
+│ authorization_boundary             │            │
+└─────────────────┬──────────────────┘            │
+                  └──────────────────┬─────────────┘
+                                     ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 12. RESPONSE & ACTION PLANNING                                    │
+│                                                                    │
+│ 同时规划：                                                          │
+│ • 应该如何回应用户                                                  │
+│ • 是否需要采取行动                                                  │
+│ • 回应与行动之间的依赖关系                                          │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 13. TURN COORDINATION PLAN                                        │
+│                                                                    │
+│ 决定：                                                              │
+│ • 只回应                                                            │
+│ • 先行动再回应                                                      │
+│ • 先回应再行动                                                      │
+│ • 先确认再行动                                                      │
+│ • 并行                                                              │
+│ • 先确认收到再执行                                                  │
+│ • 流式进度后最终回应                                                │
+└─────────────────┬─────────────────────────────────┬────────────────┘
+                  │                                 │
+                  ▼                                 ▼
+┌────────────────────────────────┐  ┌────────────────────────────────┐
+│ 14. RESPONSE CONTRACT          │  │ 15. ACTION CONTRACT            │
+│                                │  │                                │
+│ 回应类型                       │  │ 行动类型和参数                  │
+│ 回应阶段                       │  │ 前置条件                        │
+│ 回答结构                       │  │ 所需权限                        │
+│ 解释深度                       │  │ 授权状态                        │
+│ 术语等级                       │  │ 风险等级                        │
+│ 证据引用                       │  │ 幂等键                          │
+│ 澄清问题                       │  │ 验证方式                        │
+│ 不确定性披露                   │  │ 补偿方式                        │
+└────────────────┬───────────────┘  └────────────────┬───────────────┘
+                 ▼                                   ▼
+┌────────────────────────────────┐  ┌────────────────────────────────┐
+│ 16. RESPONSE POLICY CHECK      │  │ 17. ACTION ADMISSION GATE      │
+│                                │  │                                │
+│ 输出权限检查                   │  │ 权限和授权检查                  │
+│ 敏感内容检查                   │  │ 风险与政策检查                  │
+│ 必须披露的不确定性             │  │ 参数和前置条件检查              │
+│ 禁止隐藏的冲突证据             │  │ 幂等和重复执行检查              │
+└────────────────┬───────────────┘  └────────────────┬───────────────┘
+                 ▼                                   ▼
+┌────────────────────────────────┐  ┌────────────────────────────────┐
+│ 18. HOST OUTPUT ADAPTERS       │  │ 19. AGENT EXECUTION RUNTIME   │
+│                                │  │                                │
+│ Chat / API / AG-UI             │  │ 调用工具和外部系统             │
+│ SaaS / CLI / Voice             │  │ 状态追踪                       │
+│ Notification / Document        │  │ 幂等执行                       │
+│                                │  │ 结果验证                       │
+│ Host自行决定最终显示形式       │  │ 失败恢复和业务补偿             │
+└────────────────┬───────────────┘  └────────────────┬───────────────┘
+                 │                                   ▼
+                 │                  ┌────────────────────────────────┐
+                 │                  │ 20. EXECUTION RECEIPT          │
+                 │                  │                                │
+                 │                  │ 实际请求、授权、结果、外部ID   │
+                 │                  │ 验证状态和补偿记录             │
+                 │                  └────────────────┬───────────────┘
+                 └────────────────────────┬──────────┘
+                                          ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 21. INTERACTION & OUTCOME EVENTS                                  │
+│                                                                    │
+│ 用户回答、纠正、选择、拒绝、授权、执行结果、真实业务结果            │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 22. OUTCOME LEARNING RUNTIME                                      │
+│                                                                    │
+│ 判断意图是否正确                                                    │
+│ 判断回应方式是否合适                                                │
+│ 判断用户是否真正理解                                                │
+│ 判断建议是否被采纳                                                  │
+│ 判断结果是否达到目标                                                │
+│ 区分决策错误、执行错误和环境变化                                    │
+│ 生成 Human Model Update Candidate                                  │
+└───────────────────────────────┬────────────────────────────────────┘
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ 23. HUMAN MODEL UPDATE GATE                                       │
+│                                                                    │
+│ SESSION                                                            │
+│ CANDIDATE                                                          │
+│ PROVISIONAL                                                        │
+│ USER_CONFIRMED                                                     │
+│ OUTCOME_SUPPORTED                                                  │
+│ REJECTED                                                           │
+│ EXPIRED                                                            │
+│                                                                    │
+│ LLM只能提出候选，不能自行晋级                                       │
+└───────────────────────────────┬────────────────────────────────────┘
+                                │
+                                └────写回 Human Model Runtime
+
+三、逐步解释：每一层到底做什么
+第1步：Input Sources
+这是所有信息的来源。
+可能包括：
+USER
+用户说话、点击、选择或纠正
+
+HOST
+业务系统提出任务或业务目标
+
+AGENT
+其他Agent提出判断、计划或行动建议
+
+TOOL
+工具调用返回的数据
+
+EXTERNAL_SYSTEM
+ERP、CRM、财务系统或外部API
+
+HUMAN_APPROVER
+负责人、经理、财务或法务审批人
+
+SCHEDULER
+定时任务和时间触发器
+
+POLICY_ENGINE
+政策和合规系统
+
+DEVICE_ENVIRONMENT
+设备、网络、定位和输入环境
+这一层只表示“信息从哪里来”，还没有判断信息是什么意思。
+
+第2步：Protocol Gateway
+它做什么
+把不同来源、不同格式的数据统一成一种标准事件。
+例如聊天消息、CRM事件和定时器原本格式完全不同，进入系统后统一变成：
+{
+  "event_id": "evt-001",
+  "source_actor": "USER",
+  "semantic_role": "INTENT",
+  "content": "帮我比较三个供应商",
+  "timestamp": "2026-07-28T05:00:00Z",
+  "correlation_id": "run-001"
+}
+为什么必须有它
+如果不统一，后面的意图层必须分别理解：
+	•	聊天协议；
+	•	CRM Webhook；
+	•	AG-UI事件；
+	•	A2A消息；
+	•	普通API。
+系统会迅速失控。
+两维分类
+Source Actor 表示谁发出的。
+Semantic Role 表示它是什么。
+OBJECTIVE
+期望达到的目标
+
+INTENT
+当前想做什么
+
+COMMAND
+明确要求执行什么
+
+FACT
+权威事实
+
+OBSERVATION
+观察到的行为或环境信号
+
+PROPOSAL
+建议或候选方案
+
+AUTHORIZATION
+授权或拒绝
+
+POLICY
+规则和限制
+
+RESULT
+执行结果
+
+FEEDBACK
+用户反馈
+
+TIME_TRIGGER
+时间事件
+
+SECURITY_SIGNAL
+安全告警
+不能只看来源。例如 Agent 既可以发送 PROPOSAL，也可以发送 RESULT。
+
+第3步：Context Fabric
+它做什么
+为本轮任务准备系统需要的事实背景。
+分成三种上下文。
+Authority Context
+回答：
+用户是谁
+用户属于哪个组织
+用户具有什么角色
+可以读取什么
+可以执行什么
+是否已经授权
+这些必须来自权威系统，不能由 LLM 猜。
+Domain Context
+回答：
+当前有哪些业务对象
+它们是什么状态
+有哪些领域规则
+哪些数据是权威事实
+例如供应商比较中，Domain Context 包括：
+	•	报价；
+	•	交付历史；
+	•	质量问题；
+	•	合同状态；
+	•	付款条款。
+Session Context
+回答：
+当前正在处理什么
+用户当前看到了什么
+上一步发生了什么
+当前使用什么设备
+当前是否时间紧张
+当前焦点是什么
+Session Context 是临时的，不应自动写入长期用户模型。
+
+第4步：Human Model Runtime
+它负责保存“系统目前怎样理解这个用户”。
+但所有理解都是带证据的 Assertion，不是永久事实。
+Human Model 包含六部分。
+Interaction Profile
+用户怎样沟通和操作。
+例如：
+偏好短回答
+喜欢先看结论
+使用键盘较多
+偏好表格而不是长段文字
+Cognitive Interaction Profile
+用户在特定领域怎样理解信息。
+例如：
+熟悉Agent架构术语
+能够理解控制平面和数据平面
+偏好先看完整结构
+对冗长铺垫容忍度较低
+能够发现职责边界问题
+它不能写成“用户聪明”或“认知水平高”。
+Personal Decision Model
+用户怎样比较和作出选择。
+例如：
+更重视可控性还是速度
+是否接受高风险试验
+需要多少证据才愿意决定
+偏好可逆方案还是一次性选择
+Goals & Constraints
+用户长期或当前希望达成什么，以及有哪些限制。
+Decision History
+用户过去做过什么选择，当时为什么这样选择。
+Outcome History
+过去的决策最终产生了什么结果。
+
+Human Model Assertion
+Human Model Runtime 中每一项理解都采用统一 Schema。
+{
+  "schema_ref": "human-model-assertion/v1",
+  "assertion_id": "hma-001",
+
+  "subject_ref": {
+    "type": "USER",
+    "id": "user-001"
+  },
+
+  "assertion_type": "COGNITIVE_INTERACTION_PROFILE",
+  "predicate": "preferred_explanation_depth",
+
+  "value": {
+    "type": "ENUM",
+    "data": "HIGH"
+  },
+
+  "claim_summary": "用户在Agent架构问题中偏好直接查看完整结构。",
+
+  "scope": {
+    "domains": ["agent_architecture"],
+    "task_types": ["architecture_review"],
+    "global": false
+  },
+
+  "status": "PROVISIONAL",
+  "confidence": 0.82,
+
+  "source": {
+    "source_type": "INFERRED_FROM_INTERACTION",
+    "source_refs": ["evt-101", "evt-117"]
+  },
+
+  "evidence": {
+    "supporting": [],
+    "contradicting": []
+  },
+
+  "user_correction": {
+    "state": "NOT_REVIEWED",
+    "corrected_value": null
+  },
+
+  "lifecycle": {
+    "first_observed_at": "",
+    "last_observed_at": "",
+    "expires_at": "",
+    "decay_policy": "REDUCE_CONFIDENCE_AFTER_90_DAYS"
+  },
+
+  "usage_policy": {
+    "allowed_uses": [
+      "ADJUST_EXPLANATION_DEPTH",
+      "RANK_INTENT_HYPOTHESES"
+    ],
+    "forbidden_uses": [
+      "BYPASS_AUTHORIZATION",
+      "AUTOMATIC_HIGH_IMPACT_DECISION"
+    ],
+    "maximum_impact_level": "LOW"
+  },
+
+  "version": 1
+}
+它必须包含：
+这个判断是什么
+针对哪个用户
+在哪些领域适用
+当前状态是什么
+置信度是多少
+依据是什么
+有哪些冲突证据
+用户是否纠正过
+什么时候过期
+允许被用于什么
+
+第5步：Intent Fast Path Guard
+它做什么
+判断是否需要调用 LLM 做完整意图推断。
+它是确定性代码，不是 LLM。
+可以快速通过
+例如：
+“导出2026年6月销售报表”
+当以下条件全部满足：
+存在确定性命令
+参数完整
+没有歧义
+权限有效
+操作低风险
+操作可逆
+不依赖Human Model
+就走 Fast Path。
+返回 UNKNOWN
+例如：
+“处理一下这个客户。”
+可能代表：
+	•	联系客户；
+	•	催款；
+	•	处理投诉；
+	•	修改状态；
+	•	终止合作。
+此时进入完整意图解析。
+返回 BLOCK
+例如用户没有权限读取某项数据，或请求违反政策。
+
+第6A步：Deterministic Intent Resolution
+它处理明确命令。
+例如：
+输入：
+导出6月销售报表
+
+输出：
+intent = EXPORT_SALES_REPORT
+month = 2026-06
+format = DEFAULT
+这条路径不需要 LLM，延迟低、结果稳定。
+
+第6B步：Base Intent Resolution
+它处理复杂或模糊输入。
+重要规则
+这一阶段不读取长期 Human Model。
+原因是防止系统形成循环偏见：
+过去认为用户喜欢A
+→ 每次都按A解释
+→ 新行为继续证明用户喜欢A
+Base Intent Resolution 只依据：
+用户当前表达
+当前会话上下文
+Domain Facts
+当前任务
+输出多个意图假设。
+例如：
+{
+  "base_hypotheses": [
+    {
+      "intent": "比较三个供应商",
+      "confidence": 0.88
+    },
+    {
+      "intent": "选择一个供应商",
+      "confidence": 0.67
+    },
+    {
+      "intent": "识别供应商风险",
+      "confidence": 0.54
+    }
+  ]
+}
+
+第7步：Human Model Personalization
+Base Intent 已经形成后，才允许读取 Human Model。
+它只能做三件事：
+重排基础假设
+补充个性化假设
+暴露历史模型与当前表达的冲突
+它不能删除 Base Hypotheses，也不能把低置信度历史判断变成当前事实。
+例如系统知道用户经常在供应商比较中关注长期稳定性，可以提高“识别供应商风险”的优先级。
+但必须记录：
+原始排序是什么
+使用了哪条Human Model Assertion
+使用后排序怎样变化
+
+第8步：Intent Contract
+这是意图层的正式输出。
+它回答：
+用户当前可能想做什么，系统为什么这样判断，还有哪些不确定性？
+{
+  "intent_id": "intent-001",
+  "user_stated_intent": "比较三个供应商",
+
+  "base_hypotheses": [],
+  "personalized_hypotheses": [],
+
+  "primary_intent": "COMPARE_SUPPLIERS",
+  "confidence": 0.88,
+
+  "supporting_evidence": [],
+  "contradicting_evidence": [],
+
+  "ambiguity": false,
+  "clarification_required": false,
+
+  "human_model_effects": [],
+  "resolution_method": "FULL_PATH"
+}
+Intent Contract 不代表已经决定怎么做，只代表系统对当前意图的结构化理解。
+
+第9步：Decision Necessity Guard
+它做什么
+判断当前任务是否真的需要进入决策协作层。
+不需要决策
+例如：
+查询数据
+打开文件
+导出报表
+唯一合法操作
+用户已经明确选择
+需要决策
+例如：
+存在多个方案
+需要权衡成本和风险
+证据冲突
+影响较大
+结果不可逆
+涉及长期目标
+Host目标与用户利益可能冲突
+UNKNOWN
+无法确定时，保守进入 Decision Runtime。
+这意味着：
+系统宁可多分析一次，也不应该错误跳过高影响决策。
+
+第10步：Decision Collaboration Runtime
+这一层真正负责协助用户决策。
+它不是决定界面，而是决定：
+当前真正要决定什么
+目标是什么
+限制是什么
+有哪些方案
+应该用什么标准比较
+证据支持什么
+证据互相怎样冲突
+风险是什么
+是否可逆
+应该追问、质疑还是推荐
+决策框定
+例如用户说：
+“你觉得这三个供应商哪个好？”
+错误框定：
+选价格最低的供应商。
+正确框定：
+在预算、质量、交付稳定性和合作风险之间，
+选择最符合当前项目目标的供应商。
+目标与约束
+例如：
+目标：
+保证3个月内稳定交付
+
+约束：
+预算不超过50万元
+必须通过合规审查
+评价标准
+例如：
+价格
+质量
+交付稳定性
+售后能力
+财务风险
+合同灵活性
+方案补全
+系统不能只比较用户提供的方案，还应判断：
+是否可以分批采购
+是否可以先试单
+是否可以组合两家供应商
+是否应该延后决定并补充调查
+
+第11步：Decision Contract
+Decision Contract 是决策层的正式输出。
+{
+  "decision_id": "decision-001",
+  "subject": "选择项目供应商",
+  "stage": "COMPARING_OPTIONS",
+
+  "objective": "保证稳定交付并控制成本",
+
+  "constraints": [
+    "预算不超过50万元",
+    "必须通过合规审查"
+  ],
+
+  "criteria": [
+    {
+      "name": "交付稳定性",
+      "weight": 0.35
+    }
+  ],
+
+  "options": [],
+  "evidence": [],
+  "conflicts": [],
+  "risks": [],
+  "uncertainty": [],
+
+  "recommendation": {
+    "option_ref": "supplier-b",
+    "confidence": 0.74,
+    "conditions": []
+  },
+
+  "required_user_inputs": [],
+  "authorization_boundary": {}
+}
+它描述的是“怎样判断”，还不是执行指令。
+
+第12步：Response & Action Planning
+Decision Contract 形成后，系统要决定两件事：
+应该向用户说什么
+应该执行什么
+这两件事必须分开规划。
+例如：
+Response：
+向用户展示供应商比较和推荐依据
+
+Action：
+在用户确认后，把选定供应商写入采购系统
+
+第13步：Turn Coordination Plan
+它决定 Response 和 Action 的执行顺序。
+常见模式：
+RESPOND_ONLY
+只回答
+
+ACT_THEN_RESPOND
+先执行再报告
+
+RESPOND_THEN_ACT
+先说明再执行
+
+RESPOND_THEN_CONFIRM_THEN_ACT
+先说明，用户确认后执行
+
+PARALLEL
+回应与只读调查并行
+
+ACKNOWLEDGE_THEN_RUN
+先确认收到，再执行长任务
+
+STREAM_PROGRESS_THEN_FINAL
+持续报告进度，最后返回结果
+例如：
+查询销售数据
+ACT_THEN_RESPOND
+先查数据库，再告诉用户结果。
+删除客户
+RESPOND_THEN_CONFIRM_THEN_ACT
+先说明影响，等待确认，再执行。
+分析供应商并准备采购
+PARALLEL
+可以并行调查数据和生成分析。
+但正式写入采购系统前必须确认。
+Turn Coordination Plan 示例：
+{
+  "plan_id": "turn-plan-001",
+  "mode": "RESPOND_THEN_CONFIRM_THEN_ACT",
+
+  "dependencies": [
+    {
+      "before": "response-001",
+      "after": "action-001"
+    }
+  ],
+
+  "gates": [
+    {
+      "type": "USER_AUTHORIZATION",
+      "required_before": "action-001"
+    }
+  ],
+
+  "failure_policy": "REPORT_AND_OFFER_RECOVERY",
+  "progress_policy": "STREAM_STATUS"
+}
+
+第14步：Response Contract
+它描述应该如何回应用户，但不规定具体界面。
+{
+  "response_id": "response-001",
+  "response_phase": "PRE_ACTION",
+  "response_type": "RECOMMENDATION",
+
+  "answer_structure": [
+    "结论",
+    "主要依据",
+    "关键风险",
+    "等待确认"
+  ],
+
+  "evidence_refs": [],
+  "explanation_depth": "MEDIUM",
+  "terminology_level": "PROFESSIONAL",
+
+  "clarification_questions": [],
+  "uncertainty_disclosure": []
+}
+它可以被不同 Host 使用：
+聊天界面生成文本
+语音系统生成语音
+SaaS显示在原有页面
+通知系统发送提醒
+
+第15步：Action Contract
+它描述应该执行什么。
+{
+  "action_id": "action-001",
+  "action": "SELECT_SUPPLIER",
+
+  "parameters": {
+    "supplier_id": "supplier-b"
+  },
+
+  "preconditions": [
+    "supplier_status == ACTIVE",
+    "compliance_check == PASSED"
+  ],
+
+  "required_authority": [
+    "PROCUREMENT_WRITE"
+  ],
+
+  "authorization_state": "PENDING",
+  "risk_level": "HIGH",
+
+  "idempotency_key": "run-001-select-supplier-b",
+
+  "verification": [
+    "采购系统返回成功",
+    "采购项目状态更新"
+  ],
+
+  "compensation": [
+    "撤销供应商选择"
+  ]
+}
+Action Contract 不等于已经执行。
+它只是安全、可验证、可补偿的执行计划。
+
+第16步：Response Policy Check
+在发送回应前，检查：
+是否包含用户无权查看的信息
+是否需要披露不确定性
+是否隐藏了重大冲突证据
+是否违反隐私和输出政策
+是否存在误导性表述
+例如系统不能因为 Host 想促成续费，就隐藏用户取消服务的合理依据。
+
+第17步：Action Admission Gate
+这是执行前最后一道确定性门禁。
+检查：
+用户是否有权限
+Agent是否有权限
+是否已获得必要授权
+参数是否完整
+前置条件是否满足
+是否违反政策
+是否重复执行
+是否具备验证和补偿能力
+高影响操作不能只因为 LLM说“应该执行”就执行。
+
+第18步：Host Output Adapters
+Response Contract 通过 Adapter 返回给不同系统。
+Chat Adapter
+API Adapter
+AG-UI Adapter
+SaaS Adapter
+CLI Adapter
+Voice Adapter
+Notification Adapter
+Document Adapter
+本系统不规定具体页面如何设计。
+
+第19步：Agent Execution Runtime
+它真正调用外部工具和系统。
+负责：
+调用工具
+写入业务系统
+跟踪执行状态
+处理重试
+保证幂等
+验证结果
+失败恢复
+业务补偿
+例如调用 CRM、ERP、邮件、数据库或第三方 API。
+
+第20步：Execution Receipt
+执行后必须生成回执。
+{
+  "execution_id": "exec-001",
+  "action_ref": "action-001",
+
+  "authorization_ref": "auth-001",
+  "provider": "procurement-system",
+
+  "request_hash": "hash",
+  "provider_result_id": "external-992",
+
+  "status": "SUCCEEDED",
+
+  "verification": {
+    "status": "VERIFIED"
+  },
+
+  "started_at": "",
+  "completed_at": ""
+}
+它回答：
+到底执行了什么
+由谁授权
+调用了哪个系统
+系统返回了什么
+是否已经验证
+
+第21步：Interaction & Outcome Events
+系统继续接收：
+用户是否接受建议
+用户是否修改方案
+用户是否拒绝
+用户是否授权
+执行是否成功
+真实业务结果如何
+Execution Result 和 Outcome 不一样。
+例如：
+Execution Result：
+成功选择供应商B
+
+Business Outcome：
+三个月后供应商B按期交付，质量合格
+前者是执行成功，后者才是决策结果。
+
+第22步：Outcome Learning Runtime
+它负责复盘。
+需要区分：
+意图识别是否错误
+决策建议是否错误
+执行是否错误
+外部环境是否变化
+用户是否真正理解
+用户是否满意
+例如供应商项目失败，可能有三种原因：
+系统判断错误
+供应商执行失败
+市场发生突发变化
+不能把所有失败都归因于用户决策偏好。
+它最后生成 Human Model Update Candidate。
+
+第23步：Human Model Update Gate
+它决定学习结果能否写入 Human Model。
+状态包括：
+SESSION
+只在当前会话有效
+
+CANDIDATE
+单次推断候选
+
+PROVISIONAL
+多个独立证据支持
+
+USER_CONFIRMED
+用户明确确认
+
+OUTCOME_SUPPORTED
+真实结果提供支持
+
+REJECTED
+用户否定
+
+EXPIRED
+已经过期
+晋级示例
+用户本次跳过详细解释
+→ SESSION
+
+LLM判断用户可能喜欢短回答
+→ CANDIDATE
+
+多个独立会话中用户都要求精简
+→ PROVISIONAL
+
+用户明确说“以后请直接给结论”
+→ USER_CONFIRMED
+LLM不能自行执行：
+CANDIDATE → USER_CONFIRMED
+
+四、Control Plane：Orchestration Runtime
+Orchestration Runtime 不是主链路中的一层，而是贯穿整个系统的控制平面。
+它管理统一状态：
+PENDING
+RUNNING
+WAITING_INPUT
+WAITING_AUTHORIZATION
+WAITING_DEPENDENCY
+SUCCEEDED
+FAILED
+CANCELLED
+TIMED_OUT
+INVALIDATED
+模块和它通过标准协议交互。
+Orchestrator → Command
+Module → State Event
+Module → Contract Revision
+Module → Completion / Failure Event
+例如：
+{
+  "run_id": "run-001",
+  "step_id": "decision-runtime",
+  "state": "WAITING_INPUT",
+  "contract_ref": "decision-001@v4",
+  "reason": "missing_budget_constraint"
+}
+它还负责失效传播。
+例如用户修改预算：
+旧Decision Contract失效
+→ 旧Recommendation失效
+→ 旧Action Contract失效
+→ Response可能需要重算
+
+五、Governance & Observability Plane
+1. Audit Ledger
+所有重要事件都写入不可变事件账本。
+输入收到
+意图生成
+Decision Contract修订
+用户授权
+Action执行
+执行失败
+Human Model更新
+推荐实现：
+PostgreSQL
+├── audit_events
+├── contract_snapshots
+├── human_model_versions
+├── execution_receipts
+└── outbox_events
+
+Object Storage
+└── 大型证据、附件、截图和加密内容
+audit_events 使用 append-only 和哈希链。
+{
+  "event_id": "evt-001",
+  "event_type": "DECISION_CONTRACT_UPDATED",
+  "aggregate_id": "decision-001",
+  "aggregate_version": 4,
+
+  "actor": {},
+  "correlation_id": "run-001",
+  "causation_id": "evt-000",
+
+  "model_version": "model-v1",
+  "prompt_version": "prompt-v3",
+  "policy_version": "policy-v2",
+
+  "previous_hash": "hash",
+  "event_hash": "hash",
+
+  "payload_ref": "encrypted-object-reference",
+  "timestamp": ""
+}
+使用 Transactional Outbox 保证：
+业务状态已经更新
+但审计事件没有写入
+这种情况不会发生。
+
+2. Policy / Consent / Authority
+包括：
+Observation Policy
+允许观察哪些行为
+
+Inference Policy
+允许推断哪些用户属性
+
+Retention Policy
+数据可以保存多久
+
+Decision Policy
+哪些领域允许提供建议
+
+Response Policy
+哪些信息必须披露
+
+Action Policy
+哪些操作允许自动执行
+
+3. Rule Hierarchy
+Immutable Safety Rules
+平台固定，不能放宽
+
+Platform Policy
+平台统一政策
+
+Tenant Policy
+组织可配置，但只能收紧
+
+User Preference
+只影响低风险协作方式
+付款、删除、签约、权限提升等规则必须位于 Immutable Safety Rules。
+
+4. Capability Registry
+它告诉系统：
+有哪些Agent
+有哪些工具
+能读取哪些数据
+能执行什么动作
+需要什么权限
+结果怎样验证
+失败后如何补偿
+没有 Capability Registry，LLM很容易提出系统根本不能执行的方案。
+
+六、Cognitive Services
+这一部分提供认知能力。
+包括：
+主LLM
+轻量模型
+分类器
+Embedding
+Retrieval
+Reranker
+结构化抽取器
+证据冲突分析
+它们可以产生：
+意图假设
+决策方案
+风险候选
+Human Model候选
+Response候选
+Action候选
+但不能决定：
+是否允许Fast Path
+是否跳过Decision Runtime
+是否获得授权
+是否执行
+Human Model是否晋级
+
+七、九个核心契约和对象
+1. Canonical Input Event
+标准输入
+
+2. Human Model Assertion
+系统对用户的一项可纠正理解
+
+3. Intent Contract
+用户当前可能想做什么
+
+4. Decision Contract
+当前需要如何判断
+
+5. Turn Coordination Plan
+回应和行动怎样排序
+
+6. Response Contract
+应该如何回应用户
+
+7. Action Contract
+应该如何安全执行
+
+8. Execution Receipt
+实际执行了什么
+
+9. Outcome Record
+真实结果如何
+完整链路：
+Canonical Input Event
+        ↓
+Context + Human Model
+        ↓
+Intent Contract
+        ↓
+Decision Contract
+        ↓
+Turn Coordination Plan
+     ┌──────────────┴──────────────┐
+     ▼                             ▼
+Response Contract            Action Contract
+     ▼                             ▼
+用户回应                    Agent Execution
+                                   ↓
+                           Execution Receipt
+     └──────────────┬──────────────┘
+                    ↓
+               Outcome Record
+                    ↓
+         Human Model Update Candidate
+                    ↓
+          Human Model Update Gate
+
+八、完整示例
+用户提出：
+帮我比较三家供应商，如果风险最高的一家明显不合适，就暂停它，但先让我确认。
+第1步：Gateway
+Source Actor = USER
+Semantic Role = INTENT + COMMAND
+第2步：Context
+读取：
+用户采购权限
+三家供应商数据
+当前采购项目状态
+组织采购政策
+第3步：Intent Guard
+这不是简单确定性命令，因为“明显不合适”存在判断空间。
+返回：
+UNKNOWN
+进入完整意图解析。
+第4步：Base Intent
+得到：
+比较三家供应商
+识别最高风险供应商
+可能暂停不合适供应商
+执行前需要用户确认
+第5步：Human Model Personalization
+系统知道用户在采购决策中偏好先看风险和可逆方案，于是提高风险比较的优先级，但保留所有基础意图。
+第6步：Intent Contract
+确认当前主要意图：
+COMPARE_SUPPLIERS_AND_PREPARE_SUSPENSION
+第7步：Decision Guard
+存在多方案、风险权衡和高影响操作。
+返回：
+REQUIRED
+第8步：Decision Runtime
+构建：
+目标：
+选择稳定供应商，避免高风险合作
+
+标准：
+价格、质量、交付、财务、合同风险
+
+方案：
+保留全部
+暂停A
+暂停B
+暂停C
+先调查再决定
+第9步：Decision Contract
+推荐暂停供应商C，但置信度只有0.72，因为缺少最近一次财务数据。
+第10步：Response & Action Planning
+生成：
+Response：
+展示比较结果、推荐和不确定性
+
+Action：
+暂停供应商C
+第11步：Turn Coordination Plan
+由于用户明确要求先确认：
+RESPOND_THEN_CONFIRM_THEN_ACT
+第12步：Response Contract
+要求回应包含：
+比较结论
+推荐原因
+风险证据
+缺失信息
+确认请求
+第13步：Action Contract
+action = SUSPEND_SUPPLIER
+supplier = C
+authorization_state = PENDING
+第14步：Response Policy Check
+检查没有隐藏冲突证据。
+第15步：用户确认
+产生：
+Source Actor = USER
+Semantic Role = AUTHORIZATION
+第16步：Action Admission Gate
+检查：
+用户有权限
+供应商C仍为ACTIVE
+授权有效
+请求未重复
+第17步：执行
+调用采购系统暂停供应商C。
+第18步：Execution Receipt
+记录外部系统ID和执行结果。
+第19步：Outcome Learning
+未来观察供应商C的后续风险是否被验证，判断这次推荐是否正确。
+第20步：Human Model Update
+不能因为用户本次接受建议，就直接写入：
+用户永远接受系统推荐
+最多形成：
+用户在采购风险证据充分时，
+可能接受先确认再执行的协作方式。
+状态为 CANDIDATE 或 PROVISIONAL。
+
+九、第一阶段实现顺序
+不要同时实现全部能力。
+Phase 1：核心运行闭环
+Protocol Gateway
+Context Fabric
+Orchestration Runtime
+Intent Fast Path Guard
+Intent Resolution
+Intent Contract
+Decision Necessity Guard
+Decision Runtime
+Decision Contract
+Response Contract
+Action Contract
+Turn Coordination Plan
+Audit Ledger
+目标：
+能够从用户输入稳定生成意图、决策、回应和行动计划。
+Phase 2：真实执行
+Capability Registry
+Action Admission Gate
+Execution Runtime
+Execution Receipt
+失败恢复
+业务补偿
+目标：
+不只是建议，还能安全执行。
+Phase 3：Human Model
+Human Model Assertion
+Human Model Runtime
+Personalization
+User Correction
+Human Model Update Gate
+目标：
+系统逐渐适应用户，但不会形成不可控画像。
+Phase 4：Outcome Learning
+Outcome Record
+Decision Review
+Result Attribution
+Model Update Candidates
+目标：
+根据真实结果学习，而不是只根据点击学习。
+
+十、最终定义
+这套系统的完整定位是：
+Human-Centered Intent & Decision Runtime 是一个面向任何 Agent、SaaS 和业务系统的用户理解与决策协作基础设施。它将多来源输入转化为可审计的意图、决策、回应和行动契约，通过确定性门禁控制执行，并根据真实结果谨慎更新可纠正的用户模型。
+一句话概括：
+让 Agent 不只是听懂一句话，而是逐渐理解这个用户、判断何时需要协助决策，并以可预测、可审计的方式回应和行动。

@@ -1,0 +1,419 @@
+=== production/test-support feature matrix ===
+     7	[features]
+     8	default = ["orchestrator", "legacy-shadow-api"]
+     9	orchestrator = []
+    10	postgres-authority = ["orchestrator"]
+    11	production = ["postgres-authority", "idr-protocol/production"]
+    12	legacy-shadow-api = ["idr-protocol/legacy-shadow-api"]
+    13	trusted-clock = []
+    14	human-model-write = []
+    15	test-support = []
+    16	
+
+compile_error matches:
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-store/src/lib.rs:4:compile_error!(
+
+test-support public APIs:
+234:#[cfg(feature = "test-support")]
+243:#[cfg(feature = "test-support")]
+302:    #[cfg(feature = "test-support")]
+303:    pub fn pool_for_test(&self) -> &PgPool {
+311:    #[cfg(feature = "test-support")]
+312:    pub async fn query_effective_human_model_assertions_for_test(
+388:    #[cfg(feature = "test-support")]
+389:    pub async fn claim_outbox_events_for_test(
+445:    #[cfg(feature = "test-support")]
+446:    pub async fn acknowledge_outbox_event_for_test(
+1015:    #[cfg(feature = "test-support")]
+1016:    pub async fn inspect_for_test(
+1046:    #[cfg(feature = "test-support")]
+1047:    pub async fn verify_external_anchor_for_test(&self) -> Result<(), IdrRuntimeErrorV1> {
+
+=== release gate usages ===
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-runtime/src/postgres_authority.rs:260:            if ProductionReleaseGatesV1::BLOCKED.production_trust_root_is_blocked() {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/production.rs:46:    pub const fn production_trust_root_is_blocked(self) -> bool {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/production.rs:50:    pub const fn production_authorization_is_enabled(self) -> bool {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/production.rs:54:    pub const fn production_execution_is_enabled(self) -> bool {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/production.rs:58:    pub const fn human_model_long_term_write_is_enabled(self) -> bool {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/human_centered/trust.rs:72:    pub const fn production_trust_root_is_blocked(self) -> bool {
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/src/human_centered/trust.rs:643:        assert!(ProductionFeatureGatesV1::BLOCKED.production_trust_root_is_blocked());
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/tests/production_conformance.rs:25:    assert!(gates.production_trust_root_is_blocked());
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/tests/production_conformance.rs:26:    assert!(!gates.production_authorization_is_enabled());
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/tests/production_conformance.rs:27:    assert!(!gates.production_execution_is_enabled());
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-protocol/tests/production_conformance.rs:28:    assert!(!gates.human_model_long_term_write_is_enabled());
+
+human-model-write feature usages:
+/mnt/data/idr_round7_extract/IDR-V1.3-trust-chain-closure-round7-2026-07-29/IDR/crates/idr-runtime/Cargo.toml:14:human-model-write = []
+
+=== shadow/production startup ===
+   159	#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+   160	pub enum PostgresStartupModeV1 {
+   161	    Shadow,
+   162	    Production,
+   163	}
+   164	
+   251	impl PostgresIdrOrchestratorV1 {
+   252	    pub async fn connect(
+   253	        database_url: &str,
+   254	        schema: &str,
+   255	        startup_mode: PostgresStartupModeV1,
+   256	        security: PostgresSecurityContextV1,
+   257	    ) -> Result<Self, IdrRuntimeErrorV1> {
+   258	        validate_schema_name(schema)?;
+   259	        if startup_mode == PostgresStartupModeV1::Production {
+   260	            if ProductionReleaseGatesV1::BLOCKED.production_trust_root_is_blocked() {
+   261	                return Err(IdrRuntimeErrorV1::Repository(
+   262	                    "PRODUCTION TRUST ROOT = BLOCKED; independent release gates have not passed"
+   263	                        .to_string(),
+   264	                ));
+   265	            }
+   266	            if !security.anchor_backend.is_production_durable() {
+   267	                return Err(IdrRuntimeErrorV1::Repository(
+   268	                    "production startup requires an external durable audit anchor".to_string(),
+   269	                ));
+   270	            }
+   271	        }
+   272	        let connect_options = PgConnectOptions::from_str(database_url)
+   273	            .map_err(repository_error)?
+   274	            .disable_statement_logging();
+   275	        let search_path = schema.to_string();
+   276	        let pool = PgPoolOptions::new()
+   277	            .max_connections(10)
+   278	            .after_connect(move |connection, _metadata| {
+   279	                let search_path = search_path.clone();
+   280	                Box::pin(async move {
+   281	                    sqlx::query("SELECT set_config('search_path', $1, false)")
+   282	                        .bind(search_path)
+   283	                        .execute(connection)
+   284	                        .await?;
+   285	                    Ok(())
+   286	                })
+   287	            })
+   288	            .connect_with(connect_options)
+   289	            .await
+   290	            .map_err(repository_error)?;
+   291	        MIGRATOR.run(&pool).await.map_err(repository_error)?;
+   292	        let store = Self {
+   293	            pool,
+   294	            security,
+   295	            startup_mode,
+   296	            authority: OrchestratorAuthorityV1::new(),
+   297	        };
+   298	        store.verify_external_anchor().await?;
+   299	        Ok(store)
+   300	    }
+   301	
+   302	    #[cfg(feature = "test-support")]
+   303	    pub fn pool_for_test(&self) -> &PgPool {
+   304	        &self.pool
+   305	    }
+   306	
+   307	    pub fn startup_mode(&self) -> PostgresStartupModeV1 {
+   308	        self.startup_mode
+   309	    }
+   310	
+   992	impl PostgresIdrOrchestratorV1 {
+   993	    /// The only production mutation entry point. The PostgreSQL transaction,
+   994	    /// DB clock, current Trust Root, proof consumption, transition engine,
+   995	    /// audit and outbox are inseparable behind this concrete type.
+   996	    pub async fn handle(
+   997	        &self,
+   998	        command: IdrCommandEnvelopeV1,
+   999	    ) -> Result<IdrCommandReceiptV1, IdrRuntimeErrorV1> {
+  1000	        command.validate()?;
+  1001	        let (receipt, checkpoint) = self.transact_inner(&self.authority, &command).await?;
+  1002	        self.security.anchor_backend.publish(&checkpoint).await?;
+  1003	        sqlx::query(
+  1004	            "UPDATE idr_audit_checkpoints
+  1005	             SET published_at = clock_timestamp()
+  1006	             WHERE checkpoint_id = $1",
+  1007	        )
+  1008	        .bind(checkpoint.checkpoint_id)
+  1009	        .execute(&self.pool)
+  1010	        .await
+  1011	        .map_err(repository_error)?;
+  1012	        Ok(receipt)
+  1013	    }
+
+=== proof subject binding ===
+   259	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+   260	#[serde(deny_unknown_fields)]
+   261	pub struct IdrCommandEnvelopeV1 {
+   262	    command_id: Uuid,
+   263	    run_id: Uuid,
+   264	    expected_aggregate_version: u64,
+   265	    actor_ref: ReferenceV1,
+   266	    caller_ref: ReferenceV1,
+   267	    tenant_ref: ReferenceV1,
+   268	    scope_ref: ReferenceV1,
+   269	    purpose_ref: ReferenceV1,
+   270	    policy_revision_ref: ReferenceV1,
+   271	    correlation_ref: ReferenceV1,
+   272	    causation_ref: ReferenceV1,
+   273	    command: IdrCommandV1,
+   274	    proofs: Vec<ProductionProofEnvelopeV1>,
+   275	}
+   418	    pub fn proof_subject(&self) -> Result<(ReferenceV1, String), IdrRuntimeErrorV1> {
+   419	        if let Some(candidate) = self.command.candidate() {
+   420	            return Ok((
+   421	                ReferenceV1::new(format!("candidate:{}", candidate.candidate_id()))?,
+   422	                candidate.canonical_digest()?,
+   423	            ));
+   424	        }
+   425	        let digest = canonical_digest_v1("idr-command-subject-v1", &self.command)?;
+   426	        Ok((
+   427	            ReferenceV1::new(format!("command:{}", self.command_id))?,
+   428	            digest,
+   429	        ))
+   430	    }
+
+candidate commands with external target refs:
+   226	    RecordOutcome {
+   227	        outcome: CandidateSubmissionV1,
+   228	    },
+   229	    ProposeHumanModelCandidate {
+   230	        candidate: CandidateSubmissionV1,
+   231	    },
+   232	    RecordHumanModelPromotion {
+   233	        decision: CandidateSubmissionV1,
+   234	        source_candidate_ref: AuthoritativeRecordRefV1,
+   235	    },
+   236	    PromoteHumanModelAssertion {
+   237	        assertion: CandidateSubmissionV1,
+   238	        promotion_decision_ref: AuthoritativeRecordRefV1,
+   239	    },
+   240	    CorrectHumanModelAssertion {
+   241	        assertion_ref: AuthoritativeRecordRefV1,
+   242	        correction: CandidateSubmissionV1,
+   243	    },
+   244	    CancelRun {
+   245	        reason_ref: ReferenceV1,
+   246	    },
+
+=== Human Model assertion materialization ===
+  1487	        IdrCommandV1::RecordHumanModelPromotion {
+  1488	            decision,
+  1489	            source_candidate_ref,
+  1490	        } => {
+  1491	            require_exact_current_record(&projection, source_candidate_ref)?;
+  1492	            if source_candidate_ref.candidate_kind() != CandidateKindV1::HumanModelCandidate {
+  1493	                return Err(IdrRuntimeErrorV1::BindingMismatch);
+  1494	            }
+  1495	            let source_candidate = projection
+  1496	                .human_model_candidate
+  1497	                .as_ref()
+  1498	                .filter(|candidate| candidate.candidate_ref == *source_candidate_ref)
+  1499	                .ok_or(IdrRuntimeErrorV1::MissingDependency)?;
+  1500	            let outcome = validate_human_model_promotion(
+  1501	                decision.payload(),
+  1502	                source_candidate_ref.record_digest(),
+  1503	            )?;
+  1504	            require_exact_record_payload(
+  1505	                decision.payload(),
+  1506	                "outcome",
+  1507	                &source_candidate.outcome_ref,
+  1508	            )?;
+  1509	            let promotion_record = issue_record(
+  1510	                decision,
+  1511	                command,
+  1512	                trusted_now,
+  1513	                verified_proofs,
+  1514	                record_id_for(&projection, CandidateKindV1::HumanModelPromotionDecision),
+  1515	                next_revision(&projection, CandidateKindV1::HumanModelPromotionDecision),
+  1516	            )?;
+  1517	            projection.human_model_promotion = Some(HumanModelPromotionProjectionV1 {
+  1518	                decision_ref: promotion_record.record_ref().clone(),
+  1519	                source_candidate_ref: source_candidate_ref.clone(),
+  1520	                outcome_ref: source_candidate.outcome_ref.clone(),
+  1521	                outcome: outcome.to_string(),
+  1522	            });
+  1523	            authoritative_record = Some(promotion_record);
+  1524	            event_type = "human_model_promotion_decided";
+  1525	        }
+  1526	        IdrCommandV1::PromoteHumanModelAssertion {
+  1527	            assertion,
+  1528	            promotion_decision_ref,
+  1529	        } => {
+  1530	            require_exact_current_record(&projection, promotion_decision_ref)?;
+  1531	            if promotion_decision_ref.candidate_kind()
+  1532	                != CandidateKindV1::HumanModelPromotionDecision
+  1533	            {
+  1534	                return Err(IdrRuntimeErrorV1::BindingMismatch);
+  1535	            }
+  1536	            let promotion = projection
+  1537	                .human_model_promotion
+  1538	                .as_ref()
+  1539	                .filter(|promotion| {
+  1540	                    promotion.decision_ref == *promotion_decision_ref
+  1541	                        && matches!(
+  1542	                            promotion.outcome.as_str(),
+  1543	                            "promote_provisional"
+  1544	                                | "promote_user_confirmed"
+  1545	                                | "promote_outcome_supported"
+  1546	                        )
+  1547	                })
+  1548	                .ok_or(IdrRuntimeErrorV1::BindingMismatch)?;
+  1549	            let source_candidate = projection
+  1550	                .human_model_candidate
+  1551	                .as_ref()
+  1552	                .filter(|candidate| candidate.candidate_ref == promotion.source_candidate_ref)
+  1553	                .ok_or(IdrRuntimeErrorV1::MissingDependency)?;
+  1554	            let (lifecycle_state, maximum_impact_basis_points) =
+  1555	                validate_human_model_assertion_request(
+  1556	                    assertion.payload(),
+  1557	                    promotion.source_candidate_ref.record_digest(),
+  1558	                )?;
+  1559	            let mut materialized_payload = source_candidate.materialized_payload.clone();
+  1560	            let materialized = materialized_payload
+  1561	                .as_object_mut()
+  1562	                .ok_or(IdrRuntimeErrorV1::BindingMismatch)?;
+  1563	            materialized.insert(
+  1564	                "source_candidate_digest".to_string(),
+  1565	                Value::String(promotion.source_candidate_ref.record_digest().to_string()),
+  1566	            );
+  1567	            materialized.insert(
+  1568	                "lifecycle_state".to_string(),
+  1569	                Value::String(lifecycle_state.to_string()),
+  1570	            );
+  1571	            materialized.insert(
+  1572	                "maximum_impact_basis_points".to_string(),
+  1573	                Value::from(maximum_impact_basis_points),
+  1574	            );
+  1575	            authoritative_record = Some(issue_internal_record(
+  1576	                CandidateKindV1::HumanModelAssertion,
+  1577	                materialized_payload,
+  1578	                command,
+  1579	                &projection,
+  1580	                trusted_now,
+  1581	                verified_proofs,
+  1582	                record_id_for(&projection, CandidateKindV1::HumanModelAssertion),
+  1583	                next_revision(&projection, CandidateKindV1::HumanModelAssertion),
+  1584	            )?);
+  1585	            event_type = "human_model_assertion_promoted";
+  2234	fn validate_human_model_promotion<'a>(
+  2235	    payload: &'a Value,
+  2236	    candidate_digest: &str,
+  2237	) -> Result<&'a str, IdrRuntimeErrorV1> {
+  2238	    if required_payload_string(payload, "candidate_digest")? != candidate_digest {
+  2239	        return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2240	    }
+  2241	    let outcome = required_payload_string(payload, "outcome")?;
+  2242	    let evidence_count = payload
+  2243	        .get("independent_evidence_count")
+  2244	        .and_then(Value::as_u64)
+  2245	        .unwrap_or(0);
+  2246	    let valid = match outcome {
+  2247	        "keep_session" | "store_candidate" | "reject" => true,
+  2248	        "promote_provisional" => evidence_count >= 2,
+  2249	        "promote_user_confirmed" | "promote_outcome_supported" => true,
+  2250	        _ => false,
+  2251	    };
+  2252	    if valid {
+  2253	        Ok(outcome)
+  2254	    } else {
+  2255	        Err(IdrRuntimeErrorV1::BindingMismatch)
+  2256	    }
+  2257	}
+  2258	
+  2259	fn validate_human_model_assertion_request<'a>(
+  2260	    payload: &'a Value,
+  2261	    source_candidate_digest: &str,
+  2262	) -> Result<(&'a str, u16), IdrRuntimeErrorV1> {
+  2263	    let object = payload
+  2264	        .as_object()
+  2265	        .ok_or(IdrRuntimeErrorV1::BindingMismatch)?;
+  2266	    if object.keys().any(|key| {
+  2267	        !matches!(
+  2268	            key.as_str(),
+  2269	            "source_candidate_digest" | "lifecycle_state" | "maximum_impact_basis_points"
+  2270	        )
+  2271	    }) {
+  2272	        return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2273	    }
+  2274	    if required_payload_string(payload, "source_candidate_digest")? != source_candidate_digest {
+  2275	        return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2276	    }
+  2277	    let lifecycle = required_payload_string(payload, "lifecycle_state")?;
+  2278	    let maximum_impact = payload
+  2279	        .get("maximum_impact_basis_points")
+  2280	        .and_then(Value::as_u64)
+  2281	        .filter(|value| *value <= 10_000)
+  2282	        .and_then(|value| u16::try_from(value).ok())
+  2283	        .ok_or(IdrRuntimeErrorV1::BindingMismatch)?;
+  2284	    if matches!(
+  2285	        lifecycle,
+  2286	        "provisional" | "user_confirmed" | "outcome_supported"
+  2287	    ) {
+  2288	        Ok((lifecycle, maximum_impact))
+  2289	    } else {
+  2290	        Err(IdrRuntimeErrorV1::BindingMismatch)
+  2291	    }
+  2292	}
+
+DB materialization trigger:
+   148	CREATE OR REPLACE FUNCTION idr_enforce_human_model_materialization_v2()
+   149	RETURNS trigger LANGUAGE plpgsql AS $$
+   150	DECLARE
+   151	    source_payload jsonb;
+   152	    assertion_payload jsonb;
+   153	BEGIN
+   154	    SELECT candidate.record #> '{payload}'
+   155	      INTO source_payload
+   156	      FROM idr_human_model_promotion_decisions promotion
+   157	      JOIN idr_contract_records candidate
+   158	        ON candidate.record_id = promotion.source_candidate_record_id
+   159	       AND candidate.revision = promotion.source_candidate_revision
+   160	     WHERE promotion.decision_record_id = NEW.promotion_decision_record_id
+   161	       AND promotion.decision_revision = NEW.promotion_decision_revision;
+   162	    assertion_payload := NEW.assertion #> '{payload}';
+   163	    IF source_payload IS NULL
+   164	       OR assertion_payload #>> '{predicate}' <> source_payload #>> '{predicate}'
+   165	       OR assertion_payload #>> '{value_digest}' <> source_payload #>> '{value_digest}'
+   166	       OR assertion_payload #>> '{scope_ref}' <> source_payload #>> '{scope_ref}'
+   167	       OR assertion_payload #> '{evidence_refs}' <> source_payload #> '{evidence_refs}'
+   168	       OR assertion_payload #> '{allowed_purposes}' <> source_payload #> '{allowed_purposes}'
+   169	       OR assertion_payload #>> '{outcome_record_digest}'
+   170	          <> source_payload #>> '{outcome_record_digest}' THEN
+   171	        RAISE EXCEPTION 'Human Model Assertion changed promoted Candidate content';
+   172	    END IF;
+   173	    RETURN NEW;
+   174	END;
+   175	$$;
+   176	
+   177	CREATE TRIGGER idr_human_model_materialization_guard_v2
+   178	BEFORE INSERT ON idr_human_model_assertions
+   179	FOR EACH ROW EXECUTE FUNCTION idr_enforce_human_model_materialization_v2();
+
+=== reconciliation without receipt ===
+  1369	        IdrCommandV1::ReconcileExecution {
+  1370	            reservation_id,
+  1371	            resolution,
+  1372	        } => {
+  1373	            let execution = projection
+  1374	                .execution
+  1375	                .as_mut()
+  1376	                .filter(|execution| execution.reservation_id == *reservation_id)
+  1377	                .ok_or(IdrRuntimeErrorV1::InvalidExecutionTransition)?;
+  1378	            require_caller(command, &execution.provider_ref)?;
+  1379	            require_execution_state(execution, ExecutionAggregateStateV1::ReconciliationRequired)?;
+  1380	            execution.state = match resolution {
+  1381	                ReconciliationResolutionV1::Succeeded => ExecutionAggregateStateV1::Succeeded,
+  1382	                ReconciliationResolutionV1::Failed => ExecutionAggregateStateV1::Failed,
+  1383	                ReconciliationResolutionV1::Rejected => ExecutionAggregateStateV1::Rejected,
+  1384	                ReconciliationResolutionV1::Compensated => ExecutionAggregateStateV1::Compensated,
+  1385	                ReconciliationResolutionV1::Unknown => {
+  1386	                    ExecutionAggregateStateV1::ReconciliationRequired
+  1387	                }
+  1388	            };
+  1389	            event_type = "execution_reconciled";
+  1390	        }
+
+=== orchestration run state writes ===
+829:            self.projection.state = IdrRunStateV1::Invalidated;
+833:            self.projection.state = IdrRunStateV1::ReconciliationRequired;
+925:            projection.state = IdrRunStateV1::Running;
+958:                projection.state = IdrRunStateV1::Rejected;
+1437:            projection.state = IdrRunStateV1::Invalidated;
+1611:            projection.state = IdrRunStateV1::Cancelled;
+2437:        projection.state = IdrRunStateV1::Running;
+2573:        projection.state = IdrRunStateV1::Cancelled;

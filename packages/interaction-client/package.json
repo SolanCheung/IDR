@@ -1,0 +1,15 @@
+{
+  "name": "@idr/interaction-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "file:vendor/types-node-22.19.19.tgz",
+    "typescript": "file:vendor/typescript-5.9.3.tgz",
+    "undici-types": "file:vendor/undici-types-6.21.0.tgz"
+  }
+}

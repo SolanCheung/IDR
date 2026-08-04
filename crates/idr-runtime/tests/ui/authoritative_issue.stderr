@@ -1,0 +1,11 @@
+error[E0603]: struct `AuthoritativeRecordV1` is private
+ --> tests/ui/authoritative_issue.rs:1:18
+  |
+1 | use idr_runtime::AuthoritativeRecordV1;
+  |                  ^^^^^^^^^^^^^^^^^^^^^ private struct
+  |
+note: the struct `AuthoritativeRecordV1` is defined here
+ --> src/lib.rs
+  |
+  | pub use trust_chain::*;
+  |         ^^^^^^^^^^^

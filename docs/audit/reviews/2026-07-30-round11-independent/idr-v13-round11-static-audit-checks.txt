@@ -1,0 +1,961 @@
+IDR V1.3 Round 11 independent static audit checks
+Audit date: 2026-07-30
+
+=== P0: Runtime role receives schema-wide INSERT/UPDATE ===
+    87	REVOKE ALL ON idr_operation_idempotency_fences FROM PUBLIC;
+    88	
+    89	-- A production Runtime login is granted membership in this schema-specific
+    90	-- NOLOGIN role by deployment. The migrator login is deliberately not granted
+    91	-- membership. Shadow schemas share a test-only role to avoid global-role
+    92	-- accumulation during ephemeral integration tests.
+    93	DO $$
+    94	DECLARE
+    95	    runtime_role text;
+    96	    auditor_role text;
+    97	BEGIN
+    98	    runtime_role := CASE
+    99	        WHEN current_schema() LIKE 'idr_production_%'
+   100	            THEN 'idr_runtime_' || substr(md5(current_schema()), 1, 16)
+   101	        ELSE 'idr_shadow_runtime_v1'
+   102	    END;
+   103	    auditor_role := CASE
+   104	        WHEN current_schema() LIKE 'idr_production_%'
+   105	            THEN 'idr_auditor_' || substr(md5(current_schema()), 1, 16)
+   106	        ELSE 'idr_shadow_auditor_v1'
+   107	    END;
+   108	    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = runtime_role) THEN
+   109	        EXECUTE format(
+   110	            'CREATE ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+   111	            runtime_role
+   112	        );
+   113	    END IF;
+   114	    EXECUTE format(
+   115	        'ALTER ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+   116	        runtime_role
+   117	    );
+   118	    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = auditor_role) THEN
+   119	        EXECUTE format(
+   120	            'CREATE ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+   121	            auditor_role
+   122	        );
+   123	    END IF;
+   124	    EXECUTE format(
+   125	        'ALTER ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+   126	        auditor_role
+   127	    );
+   128	    EXECUTE format('REVOKE CREATE ON SCHEMA %I FROM %I', current_schema(), runtime_role);
+   129	    EXECUTE format('GRANT USAGE ON SCHEMA %I TO %I', current_schema(), runtime_role);
+   130	    EXECUTE format(
+   131	        'GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA %I TO %I',
+   132	        current_schema(),
+   133	        runtime_role
+   134	    );
+   135	    EXECUTE format(
+   136	        'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA %I TO %I',
+   137	        current_schema(),
+   138	        runtime_role
+   139	    );
+   140	    -- Identity columns are not update-authorized for Runtime at the ACL layer.
+   141	    -- The guards remain defense in depth, not the primary role boundary.
+   142	    EXECUTE format(
+   143	        'REVOKE UPDATE ON idr_execution_reservations FROM %I',
+   144	        runtime_role
+   145	    );
+   146	    EXECUTE format(
+   147	        'GRANT UPDATE (state, aggregate_version, updated_at)
+   148	           ON idr_execution_reservations TO %I',
+   149	        runtime_role
+   150	    );
+   151	    EXECUTE format(
+   152	        'REVOKE UPDATE ON idr_execution_attempts FROM %I',
+   153	        runtime_role
+   154	    );
+   155	    EXECUTE format(
+   156	        'GRANT UPDATE (state, started_at, completed_at)
+   157	           ON idr_execution_attempts TO %I',
+   158	        runtime_role
+   159	    );
+   160	    EXECUTE format(
+   161	        'REVOKE UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+   162	           ON idr_operation_idempotency_fences FROM %I',
+   163	        runtime_role
+   164	    );
+   165	    EXECUTE format(
+   166	        'GRANT SELECT, INSERT ON idr_operation_idempotency_fences TO %I',
+   167	        runtime_role
+   168	    );
+   169	
+   170	    EXECUTE format('REVOKE CREATE ON SCHEMA %I FROM %I', current_schema(), auditor_role);
+   171	    EXECUTE format('GRANT USAGE ON SCHEMA %I TO %I', current_schema(), auditor_role);
+   172	    EXECUTE format(
+   173	        'GRANT SELECT ON ALL TABLES IN SCHEMA %I TO %I',
+   174	        current_schema(),
+   175	        auditor_role
+   176	    );
+   177	    EXECUTE format(
+   178	        'GRANT SELECT ON ALL SEQUENCES IN SCHEMA %I TO %I',
+   179	        current_schema(),
+   180	        auditor_role
+   181	    );
+   182	END;
+   183	$$;
+
+=== Startup role validation does not enumerate exact table DML privileges ===
+   395	    #[cfg(feature = "production")]
+   396	    async fn verify_production_runtime_role(&self) -> Result<(), IdrRuntimeErrorV1> {
+   397	        let row = sqlx::query(
+   398	            "WITH required_role AS (
+   399	                 SELECT 'idr_runtime_' || substr(md5(current_schema()), 1, 16) AS role_name
+   400	             )
+   401	             SELECT actor.rolsuper, actor.rolcreaterole, actor.rolcreatedb,
+   402	                    actor.rolreplication, actor.rolbypassrls, actor.rolinherit,
+   403	                    pg_has_role(current_user, required_role.role_name, 'USAGE')
+   404	                        AS has_required_role,
+   405	                    has_schema_privilege(current_user, current_schema(), 'CREATE')
+   406	                        AS can_create_in_schema,
+   407	                    has_database_privilege(current_user, current_database(), 'CREATE')
+   408	                        AS can_create_database_objects,
+   409	                    has_table_privilege(
+   410	                        current_user, 'idr_operation_idempotency_fences', 'TRIGGER'
+   411	                    ) AS can_manage_fence_triggers,
+   412	                    EXISTS (
+   413	                        SELECT 1
+   414	                        FROM pg_class relation
+   415	                        JOIN pg_namespace namespace
+   416	                          ON namespace.oid = relation.relnamespace
+   417	                        WHERE namespace.nspname = current_schema()
+   418	                          AND relation.relkind IN ('r', 'p', 'S')
+   419	                          AND pg_has_role(current_user, relation.relowner, 'USAGE')
+   420	                    ) AS can_assume_object_owner
+   421	             FROM pg_roles actor
+   422	             CROSS JOIN required_role
+   423	             WHERE actor.rolname = current_user",
+   424	        )
+   425	        .fetch_one(&self.pool)
+   426	        .await
+   427	        .map_err(repository_error)?;
+   428	        let forbidden_authority = row
+   429	            .try_get::<bool, _>("rolsuper")
+   430	            .map_err(repository_error)?
+   431	            || row
+   432	                .try_get::<bool, _>("rolcreaterole")
+   433	                .map_err(repository_error)?
+   434	            || row
+   435	                .try_get::<bool, _>("rolcreatedb")
+   436	                .map_err(repository_error)?
+   437	            || row
+   438	                .try_get::<bool, _>("rolreplication")
+   439	                .map_err(repository_error)?
+   440	            || row
+   441	                .try_get::<bool, _>("rolbypassrls")
+   442	                .map_err(repository_error)?
+   443	            || !row
+   444	                .try_get::<bool, _>("rolinherit")
+   445	                .map_err(repository_error)?
+   446	            || !row
+   447	                .try_get::<bool, _>("has_required_role")
+   448	                .map_err(repository_error)?
+   449	            || row
+   450	                .try_get::<bool, _>("can_create_in_schema")
+   451	                .map_err(repository_error)?
+   452	            || row
+   453	                .try_get::<bool, _>("can_create_database_objects")
+   454	                .map_err(repository_error)?
+   455	            || row
+   456	                .try_get::<bool, _>("can_manage_fence_triggers")
+   457	                .map_err(repository_error)?
+   458	            || row
+   459	                .try_get::<bool, _>("can_assume_object_owner")
+   460	                .map_err(repository_error)?;
+   461	        if forbidden_authority {
+   462	            return Err(IdrRuntimeErrorV1::Repository(
+   463	                "Production Runtime database identity has migration/DDL/owner authority"
+   464	                    .to_string(),
+   465	            ));
+   466	        }
+   467	        Ok(())
+   468	    }
+
+=== Command receipt table permits INSERT; guards only identity and append-only mutation ===
+   335	CREATE TABLE IF NOT EXISTS idr_audit_checkpoints (
+   336	    checkpoint_id uuid PRIMARY KEY,
+   337	    tenant_ref text NOT NULL,
+   338	    audit_sequence bigint NOT NULL CHECK (audit_sequence > 0),
+   339	    chain_root text NOT NULL CHECK (length(chain_root) = 64),
+   340	    signed_checkpoint jsonb NOT NULL,
+   341	    published_at timestamptz,
+   342	    created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+   343	    UNIQUE (tenant_ref, audit_sequence)
+   344	);
+   345	
+   346	CREATE TABLE IF NOT EXISTS idr_command_receipts (
+   347	    command_id uuid PRIMARY KEY,
+   348	    run_id uuid NOT NULL REFERENCES idr_runs(run_id),
+   349	    aggregate_version bigint NOT NULL,
+   350	    event_sequence bigint NOT NULL,
+   351	    receipt jsonb NOT NULL,
+   352	    created_at timestamptz NOT NULL DEFAULT clock_timestamp()
+   353	);
+   354	
+   139	DROP TRIGGER IF EXISTS idr_run_event_domain_guard_v3 ON idr_run_events;
+   140	DROP TRIGGER IF EXISTS idr_step_snapshot_domain_guard_v3 ON idr_step_snapshots;
+   141	DROP TRIGGER IF EXISTS idr_proof_consumption_domain_guard_v3 ON idr_proof_consumptions;
+   142	DROP TRIGGER IF EXISTS idr_audit_event_domain_guard_v3 ON idr_audit_events;
+   143	DROP TRIGGER IF EXISTS idr_outbox_event_domain_guard_v3 ON idr_outbox_events;
+   144	DROP TRIGGER IF EXISTS idr_command_receipt_domain_guard_v3 ON idr_command_receipts;
+   145	
+   146	CREATE TRIGGER idr_run_event_identity_guard_v4
+   147	BEFORE INSERT OR UPDATE ON idr_run_events
+   148	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   149	CREATE TRIGGER idr_step_snapshot_identity_guard_v4
+   150	BEFORE INSERT OR UPDATE ON idr_step_snapshots
+   151	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   152	CREATE TRIGGER idr_proof_consumption_identity_guard_v4
+   153	BEFORE INSERT OR UPDATE ON idr_proof_consumptions
+   154	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   155	CREATE TRIGGER idr_audit_event_identity_guard_v4
+   156	BEFORE INSERT OR UPDATE ON idr_audit_events
+   157	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   158	CREATE TRIGGER idr_outbox_event_identity_guard_v4
+   159	BEFORE INSERT OR UPDATE ON idr_outbox_events
+   160	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   161	CREATE TRIGGER idr_command_receipt_identity_guard_v4
+   162	BEFORE INSERT OR UPDATE ON idr_command_receipts
+   163	FOR EACH ROW EXECUTE FUNCTION idr_enforce_run_child_identity_v4();
+   164	
+   353	CREATE TRIGGER idr_run_events_append_only_v4
+   354	BEFORE UPDATE OR DELETE ON idr_run_events
+   355	FOR EACH ROW EXECUTE FUNCTION idr_reject_authority_mutation_v4();
+   356	CREATE TRIGGER idr_audit_events_append_only_v4
+   357	BEFORE UPDATE OR DELETE ON idr_audit_events
+   358	FOR EACH ROW EXECUTE FUNCTION idr_reject_authority_mutation_v4();
+   359	CREATE TRIGGER idr_command_receipts_append_only_v4
+   360	BEFORE UPDATE OR DELETE ON idr_command_receipts
+   361	FOR EACH ROW EXECUTE FUNCTION idr_reject_authority_mutation_v4();
+   362	CREATE TRIGGER idr_response_consumptions_append_only_v4
+
+=== Receipt replay trusts stored JSON after current proof revalidation ===
+  1630	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  1631	        }
+  1632	        let command_digest = command.canonical_digest()?;
+  1633	        if let Some(row) = sqlx::query(
+  1634	            "SELECT trust_domain, environment_ref, tenant_ref, run_id, actor_ref, caller_ref,
+  1635	                    command_digest, receipt
+  1636	                 FROM idr_command_receipts WHERE command_id = $1",
+  1637	        )
+  1638	        .bind(command.command_id())
+  1639	        .fetch_optional(&mut *transaction)
+  1640	        .await
+  1641	        .map_err(repository_error)?
+  1642	        {
+  1643	            let same_command = row
+  1644	                .try_get::<String, _>("trust_domain")
+  1645	                .map_err(repository_error)?
+  1646	                == trust_domain_name(self.trust_domain)?
+  1647	                && row
+  1648	                    .try_get::<String, _>("environment_ref")
+  1649	                    .map_err(repository_error)?
+  1650	                    == self.security.environment_ref.as_str()
+  1651	                && row
+  1652	                    .try_get::<String, _>("tenant_ref")
+  1653	                    .map_err(repository_error)?
+  1654	                    == command.tenant_ref().as_str()
+  1655	                && row.try_get::<Uuid, _>("run_id").map_err(repository_error)? == command.run_id()
+  1656	                && row
+  1657	                    .try_get::<String, _>("actor_ref")
+  1658	                    .map_err(repository_error)?
+  1659	                    == command.actor_ref().as_str()
+  1660	                && row
+  1661	                    .try_get::<String, _>("caller_ref")
+  1662	                    .map_err(repository_error)?
+  1663	                    == command.caller_ref().as_str()
+  1664	                && row
+  1665	                    .try_get::<String, _>("command_digest")
+  1666	                    .map_err(repository_error)?
+  1667	                    == command_digest;
+  1668	            if !same_command {
+  1669	                return Err(IdrRuntimeErrorV1::IdempotencyConflict);
+  1670	            }
+  1671	            // A matching idempotent Receipt replay is an authenticated read,
+  1672	            // not a bypass. After rejecting command-ID conflicts, revalidate
+  1673	            // the original exact proof set against current database time and
+  1674	            // the current Trust Root before returning the stored Receipt.
+  1675	            self.verify_proofs_inside_transaction(command, trusted_now, &trust_root)?;
+  1676	            let mut receipt: IdrCommandReceiptV1 =
+  1677	                serde_json::from_value(row.try_get("receipt").map_err(repository_error)?)
+  1678	                    .map_err(|_| IdrRuntimeErrorV1::Serialization)?;
+  1679	            receipt.idempotent_replay = true;
+  1680	            let checkpoint = latest_checkpoint_for_tenant(
+  1681	                &mut transaction,
+  1682	                self.trust_domain,
+  1683	                self.security.environment_ref.as_str(),
+  1684	                command.tenant_ref().as_str(),
+  1685	            )
+  1686	            .await?;
+  1687	            transaction.commit().await.map_err(repository_error)?;
+  1688	            return Ok((receipt, checkpoint));
+  1689	        }
+  1690	
+  1030	#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+  1031	#[serde(deny_unknown_fields)]
+  1032	pub struct IdrCommandReceiptV1 {
+  1033	    pub command_id: Uuid,
+  1034	    pub trust_domain: IdrTrustDomainV1,
+  1035	    pub environment_ref: ReferenceV1,
+  1036	    pub run_id: Uuid,
+  1037	    pub aggregate_version: u64,
+  1038	    pub event_sequence: u64,
+  1039	    pub state: IdrRunStateV1,
+  1040	    pub record_ref: Option<AuthoritativeRecordRefV1>,
+  1041	    pub idempotent_replay: bool,
+  1042	}
+  1043	
+
+=== Current role attack tests cover DDL/update/delete, not raw authority INSERT ===
+  1459	    // Attack regression: production_runtime_role_cannot_disable_execution_guards.
+  1460	    let mut restricted_lifecycle_update = store.pool_for_test().begin().await.unwrap();
+  1461	    sqlx::query("SET LOCAL ROLE idr_shadow_runtime_v1")
+  1462	        .execute(&mut *restricted_lifecycle_update)
+  1463	        .await
+  1464	        .unwrap();
+  1465	    assert_eq!(
+  1466	        sqlx::query(
+  1467	            "UPDATE idr_execution_reservations
+  1468	             SET state = state,
+  1469	                 aggregate_version = aggregate_version + 1,
+  1470	                 updated_at = clock_timestamp()
+  1471	             WHERE reservation_id = $1",
+  1472	        )
+  1473	        .bind(execution.reservation_id)
+  1474	        .execute(&mut *restricted_lifecycle_update)
+  1475	        .await
+  1476	        .unwrap()
+  1477	        .rows_affected(),
+  1478	        1,
+  1479	        "the Runtime role must retain only the lifecycle UPDATE columns it needs"
+  1480	    );
+  1481	    drop(restricted_lifecycle_update);
+  1482	
+  1483	    let mut restricted_transaction = store.pool_for_test().begin().await.unwrap();
+  1484	    sqlx::query("SET LOCAL ROLE idr_shadow_runtime_v1")
+  1485	        .execute(&mut *restricted_transaction)
+  1486	        .await
+  1487	        .unwrap();
+  1488	    let alter_error = sqlx::query(
+  1489	        "ALTER TABLE idr_execution_reservations
+  1490	         DISABLE TRIGGER idr_execution_reservation_update_guard_v5",
+  1491	    )
+  1492	    .execute(&mut *restricted_transaction)
+  1493	    .await
+  1494	    .unwrap_err();
+  1495	    assert_eq!(
+  1496	        alter_error
+  1497	            .as_database_error()
+  1498	            .and_then(|error| error.code())
+  1499	            .as_deref(),
+  1500	        Some("42501"),
+  1501	        "the Runtime role must be denied table-owner/DDL authority by PostgreSQL"
+  1502	    );
+  1503	    drop(restricted_transaction);
+  1504	    let mut restricted_update = store.pool_for_test().begin().await.unwrap();
+  1505	    sqlx::query("SET LOCAL ROLE idr_shadow_runtime_v1")
+  1506	        .execute(&mut *restricted_update)
+  1507	        .await
+  1508	        .unwrap();
+  1509	    let identity_update_error = sqlx::query(
+  1510	        "UPDATE idr_execution_reservations
+  1511	         SET idempotency_key = 'runtime-role-release-attempt'
+  1512	         WHERE reservation_id = $1",
+  1513	    )
+  1514	    .bind(execution.reservation_id)
+  1515	    .execute(&mut *restricted_update)
+  1516	    .await
+  1517	    .unwrap_err();
+  1518	    assert_eq!(
+  1519	        identity_update_error
+  1520	            .as_database_error()
+  1521	            .and_then(|error| error.code())
+  1522	            .as_deref(),
+  1523	        Some("42501"),
+  1524	        "the Runtime role must be denied identity-column UPDATE at the ACL layer"
+  1525	    );
+  1526	    drop(restricted_update);
+  1527	
+  1528	    let mut restricted_delete = store.pool_for_test().begin().await.unwrap();
+  1529	    sqlx::query("SET LOCAL ROLE idr_shadow_runtime_v1")
+  1530	        .execute(&mut *restricted_delete)
+  1531	        .await
+  1532	        .unwrap();
+  1533	    let fence_delete_error =
+  1534	        sqlx::query("DELETE FROM idr_operation_idempotency_fences WHERE fence_id = $1")
+  1535	            .bind(execution.reservation_id)
+  1536	            .execute(&mut *restricted_delete)
+  1537	            .await
+  1538	            .unwrap_err();
+  1539	    assert_eq!(
+  1540	        fence_delete_error
+  1541	            .as_database_error()
+  1542	            .and_then(|error| error.code())
+  1543	            .as_deref(),
+  1544	        Some("42501"),
+  1545	        "the Runtime role must be denied deletion of the permanent fence"
+  1546	    );
+  1547	    drop(restricted_delete);
+  1548	
+  1549	    let mut auditor_transaction = store.pool_for_test().begin().await.unwrap();
+  1550	    sqlx::query("SET LOCAL ROLE idr_shadow_auditor_v1")
+  1551	        .execute(&mut *auditor_transaction)
+  1552	        .await
+  1553	        .unwrap();
+  1554	    assert_eq!(
+  1555	        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM idr_operation_idempotency_fences")
+  1556	            .fetch_one(&mut *auditor_transaction)
+  1557	            .await
+  1558	            .unwrap(),
+  1559	        1,
+  1560	        "the independent auditor role must retain read access"
+  1561	    );
+  1562	    let auditor_write_error = sqlx::query(
+  1563	        "UPDATE idr_execution_reservations
+  1564	         SET state = state
+  1565	         WHERE reservation_id = $1",
+  1566	    )
+  1567	    .bind(execution.reservation_id)
+  1568	    .execute(&mut *auditor_transaction)
+  1569	    .await
+  1570	    .unwrap_err();
+  1571	    assert_eq!(
+  1572	        auditor_write_error
+  1573	            .as_database_error()
+  1574	            .and_then(|error| error.code())
+  1575	            .as_deref(),
+  1576	        Some("42501"),
+  1577	        "the auditor role must be read-only"
+  1578	    );
+  1579	    drop(auditor_transaction);
+  1580	
+
+=== Proof revocation is rejected before semantic transition and is not persisted as cancellation ===
+  1745	            }
+  1746	            None => return Err(IdrRuntimeErrorV1::MissingDependency),
+  1747	        };
+  1748	
+  1749	        self.reverify_bound_action_admission_proofs(
+  1750	            &mut transaction,
+  1751	            &projection,
+  1752	            command,
+  1753	            trusted_now,
+  1754	            &trust_root,
+  1755	        )
+  1756	        .await?;
+  1757	        check_proof_replay(
+  1758	            &mut transaction,
+  1759	            command,
+  1760	            &verified_proofs,
+  2052	    async fn reverify_bound_action_admission_proofs(
+  2053	        &self,
+  2054	        transaction: &mut Transaction<'_, Postgres>,
+  2055	        projection: &IdrRunProjectionV1,
+  2056	        command: &IdrCommandEnvelopeV1,
+  2057	        trusted_now: u64,
+  2058	        trust_root: &TrustRootSnapshotV1,
+  2059	    ) -> Result<(), IdrRuntimeErrorV1> {
+  2060	        if !matches!(
+  2061	            command.command(),
+  2062	            IdrCommandV1::ReserveExecution { .. }
+  2063	                | IdrCommandV1::RecoverPermit { .. }
+  2064	                | IdrCommandV1::DeliverPermit { .. }
+  2065	                | IdrCommandV1::StartDispatch { .. }
+  2066	        ) {
+  2067	            return Ok(());
+  2068	        }
+  2069	        let admission = projection
+  2070	            .action_admission
+  2071	            .as_ref()
+  2072	            .ok_or(IdrRuntimeErrorV1::ActionNotAdmitted)?;
+  2073	        if admission.proof_bindings.len() != ACTION_ADMISSION_PROOF_KINDS_V1.len()
+  2074	            || admission
+  2075	                .proof_bindings
+  2076	                .get(&ProductionProofKindV1::ExactAuthorization)
+  2077	                .is_none_or(|binding| {
+  2078	                    binding.proof_id != admission.exact_authorization_proof_id
+  2079	                        || binding.valid_until != admission.authorization_valid_until
+  2080	                })
+  2081	        {
+  2082	            return Err(IdrRuntimeErrorV1::ActionNotAdmitted);
+  2083	        }
+  2084	        for proof_kind in ACTION_ADMISSION_PROOF_KINDS_V1 {
+  2085	            let binding = admission
+  2086	                .proof_bindings
+  2087	                .get(&proof_kind)
+  2088	                .ok_or(IdrRuntimeErrorV1::ActionNotAdmitted)?;
+  2089	            let envelope_value: Value = sqlx::query_scalar(
+  2090	                "SELECT envelope FROM idr_proof_envelopes
+  2091	                 WHERE proof_id = $1 AND trust_domain = $2 AND environment_ref = $3",
+  2092	            )
+  2093	            .bind(binding.proof_id)
+  2094	            .bind(trust_domain_name(self.trust_domain)?)
+  2095	            .bind(self.security.environment_ref.as_str())
+  2096	            .fetch_optional(&mut **transaction)
+  2097	            .await
+  2098	            .map_err(repository_error)?
+  2099	            .ok_or(IdrRuntimeErrorV1::ActionNotAdmitted)?;
+  2100	            let envelope: ProductionProofEnvelopeV1 = serde_json::from_value(envelope_value)
+  2101	                .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?;
+  2102	            let claims = envelope.claims();
+  2103	            let issuer_ref = self
+  2104	                .security
+  2105	                .expected_issuers
+  2106	                .get(&proof_kind)
+  2107	                .cloned()
+  2108	                .ok_or(IdrRuntimeErrorV1::MissingRequiredProof)?;
+  2109	            if claims.proof_id() != binding.proof_id
+  2110	                || claims.proof_kind() != proof_kind
+  2111	                || claims.expires_at() != binding.valid_until
+  2112	                || claims.tenant_ref() != command.tenant_ref()
+  2113	                || claims.scope_ref() != command.scope_ref()
+  2114	                || claims.purpose_ref() != command.purpose_ref()
+  2115	                || claims.policy_revision_ref() != command.policy_revision_ref()
+  2116	                || !proof_assertion_allows(claims)
+  2117	            {
+  2118	                return Err(IdrRuntimeErrorV1::ActionNotAdmitted);
+  2119	            }
+  2120	            trust_root
+  2121	                .verify_at(
+  2122	                    &envelope,
+  2123	                    &ExpectedProductionProofV1 {
+  2124	                        trust_domain: self.trust_domain,
+  2125	                        environment_ref: self.security.environment_ref.clone(),
+  2126	                        proof_kind,
+  2127	                        issuer_ref,
+  2128	                        subject_ref: claims.subject_ref().clone(),
+  2129	                        subject_digest: claims.subject_digest().to_string(),
+  2130	                        audience_ref: self.security.audience_ref.clone(),
+  2131	                        tenant_ref: command.tenant_ref().clone(),
+  2132	                        scope_ref: command.scope_ref().clone(),
+  2133	                        purpose_ref: command.purpose_ref().clone(),
+  2134	                        policy_revision_ref: command.policy_revision_ref().clone(),
+  2135	                    },
+  2136	                    trusted_now,
+  2137	                )
+  2138	                .map_err(IdrRuntimeErrorV1::from)?;
+  2139	        }
+  2140	        Ok(())
+  2141	    }
+   770	    let revoked_policy_root = TrustRootSnapshotV1::new(
+   771	        TrustDomainV1::Shadow,
+   772	        reference("environment:idr:shadow:vertical"),
+   773	        2,
+   774	        issued_at,
+   775	        vec![
+   776	            ProductionIssuerKeyV1::new(
+   777	                TrustDomainV1::Shadow,
+   778	                reference("environment:idr:shadow:vertical"),
+   779	                reference("issuer:vertical-trust"),
+   780	                reference("key:vertical:v1"),
+   781	                &hex(signing_key.verifying_key().as_bytes()),
+   782	                reference("audience:idr:shadow:vertical"),
+   783	                reference("tenant:vertical"),
+   784	                kinds.clone(),
+   785	                issued_at - 10,
+   786	                issued_at + 1_200,
+   787	                None,
+   788	            )
+   789	            .unwrap(),
+   790	            ProductionIssuerKeyV1::new(
+   791	                TrustDomainV1::Shadow,
+   792	                reference("environment:idr:shadow:vertical"),
+   793	                reference("issuer:vertical-trust"),
+   794	                reference("key:vertical:policy-v1"),
+   795	                &hex(policy_signing_key.verifying_key().as_bytes()),
+   796	                reference("audience:idr:shadow:vertical"),
+   797	                reference("tenant:vertical"),
+   798	                BTreeSet::from([ProductionProofKindV1::Policy]),
+   799	                issued_at - 10,
+   800	                issued_at + 1_200,
+   801	                Some(issued_at),
+   802	            )
+   803	            .unwrap(),
+   804	        ],
+   805	    )
+   806	    .unwrap();
+   807	    trust_root_provider.rotate(revoked_policy_root).unwrap();
+   808	    // Attack regression: revoked_policy_after_admission_blocks_reserve.
+   809	    let revoked_policy_reservation = attach_proofs(
+   810	        command(
+   811	            run_id,
+   812	            9,
+   813	            IdrCommandV1::ReserveExecution {
+   814	                action_admission_ref: admission_ref.clone(),
+   815	                action_ref: action_ref.clone(),
+   816	                action_digest: action_ref.record_digest().to_string(),
+   817	                provider_ref: reference("provider:vertical"),
+   818	                owner_ref: reference("caller:vertical-test"),
+   819	                idempotency_key: "vertical-execution".to_string(),
+   820	                attempt: 1,
+   821	                lease_until: issued_at + 300,
+   822	                dispatch_nonce: "37".repeat(32),
+   823	            },
+   824	        ),
+   825	        &[ExecutionPermit],
+   826	        &signing_key,
+   827	        issued_at,
+   828	    );
+   829	    assert!(
+   830	        orchestrator
+   831	            .handle(revoked_policy_reservation)
+   832	            .await
+   833	            .is_err(),
+   834	        "a Policy key revoked after Admission must block Reservation"
+   835	    );
+   836	    assert_eq!(
+   837	        orchestrator
+   838	            .inspect_for_test(run_id)
+   839	            .await
+   840	            .unwrap()
+   841	            .unwrap()
+   842	            .aggregate_version,
+   843	        9
+   844	    );
+   845	
+
+=== Public trust-root and anchor provider injection surface ===
+    38	pub trait CurrentTrustRootProviderV1: Send + Sync {
+    39	    fn current_snapshot(&self) -> Result<TrustRootSnapshotV1, IdrRuntimeErrorV1>;
+    40	}
+    41	
+    42	#[derive(Clone)]
+    43	pub struct RotatingTrustRootProviderV1 {
+    44	    current: Arc<RwLock<TrustRootSnapshotV1>>,
+    45	}
+    46	
+    47	impl RotatingTrustRootProviderV1 {
+    48	    pub fn new(snapshot: TrustRootSnapshotV1) -> Self {
+    49	        Self {
+    50	            current: Arc::new(RwLock::new(snapshot)),
+    51	        }
+    52	    }
+    53	
+    54	    pub fn rotate(&self, snapshot: TrustRootSnapshotV1) -> Result<(), IdrRuntimeErrorV1> {
+    55	        let mut current = self
+    56	            .current
+    57	            .write()
+    58	            .map_err(|_| IdrRuntimeErrorV1::Repository("Trust Root lock poisoned".to_string()))?;
+    59	        if snapshot.root_version() <= current.root_version() {
+    60	            return Err(IdrRuntimeErrorV1::Repository(
+    61	                "Trust Root version must advance monotonically".to_string(),
+    62	            ));
+    63	        }
+    64	        *current = snapshot;
+    65	        Ok(())
+    66	    }
+    67	}
+    68	
+    69	impl CurrentTrustRootProviderV1 for RotatingTrustRootProviderV1 {
+    70	    fn current_snapshot(&self) -> Result<TrustRootSnapshotV1, IdrRuntimeErrorV1> {
+    71	        self.current
+    72	            .read()
+    73	            .map(|snapshot| snapshot.clone())
+    74	            .map_err(|_| IdrRuntimeErrorV1::Repository("Trust Root lock poisoned".to_string()))
+    75	    }
+    76	}
+    77	
+    78	#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    79	#[serde(deny_unknown_fields)]
+    80	pub struct AuditCheckpointV1 {
+    81	    pub trust_domain: IdrTrustDomainV1,
+    82	    pub environment_ref: String,
+    83	    pub tenant_ref: String,
+    84	    pub audit_sequence: i64,
+    85	    pub chain_root: String,
+    86	    pub record_set_root: String,
+    87	    pub execution_state_root: String,
+    88	    pub checkpoint_id: Uuid,
+    89	}
+    90	
+    91	#[async_trait]
+    92	pub trait AuditCheckpointAnchorBackendV1: Send + Sync {
+    93	    async fn load_latest(
+    94	        &self,
+    95	        trust_domain: IdrTrustDomainV1,
+    96	        environment_ref: &str,
+    97	        tenant_ref: &str,
+    98	    ) -> Result<Option<AuditCheckpointV1>, IdrRuntimeErrorV1>;
+    99	
+   100	    async fn publish(&self, checkpoint: &AuditCheckpointV1) -> Result<(), IdrRuntimeErrorV1>;
+   101	
+   102	    fn is_production_durable(&self) -> bool;
+   103	}
+   162	#[derive(Clone)]
+   163	pub struct PostgresSecurityContextV1 {
+   164	    trust_domain: IdrTrustDomainV1,
+   165	    environment_ref: ReferenceV1,
+   166	    trust_root_provider: Arc<dyn CurrentTrustRootProviderV1>,
+   167	    anchor_backend: Arc<dyn AuditCheckpointAnchorBackendV1>,
+   168	    audience_ref: ReferenceV1,
+   169	    expected_issuers: BTreeMap<ProductionProofKindV1, ReferenceV1>,
+   170	}
+   171	
+   172	impl PostgresSecurityContextV1 {
+   173	    pub fn new(
+   174	        trust_domain: IdrTrustDomainV1,
+   175	        environment_ref: ReferenceV1,
+   176	        trust_root_provider: Arc<dyn CurrentTrustRootProviderV1>,
+   177	        anchor_backend: Arc<dyn AuditCheckpointAnchorBackendV1>,
+   178	        audience_ref: ReferenceV1,
+   179	        expected_issuers: BTreeMap<ProductionProofKindV1, ReferenceV1>,
+   180	    ) -> Result<Self, IdrRuntimeErrorV1> {
+   181	        if expected_issuers.is_empty()
+   182	            || !audience_matches_trust_domain(&audience_ref, trust_domain, &environment_ref)
+   183	        {
+   184	            return Err(IdrRuntimeErrorV1::Repository(
+   185	                "expected issuer registry is empty or audience is not domain-namespaced"
+   186	                    .to_string(),
+   187	            ));
+   188	        }
+   189	        Ok(Self {
+   190	            trust_domain,
+   191	            environment_ref,
+   192	            trust_root_provider,
+   193	            anchor_backend,
+   194	            audience_ref,
+   195	            expected_issuers,
+   196	        })
+   197	    }
+   198	}
+
+=== Commit-to-anchor gap and startup auto-publication ===
+   776	            let mut anchor = self
+   777	                .security
+   778	                .anchor_backend
+   779	                .load_latest(
+   780	                    self.trust_domain,
+   781	                    self.security.environment_ref.as_str(),
+   782	                    &tenant_ref,
+   783	                )
+   784	                .await?;
+   785	            if let Some(checkpoint) = &db_checkpoint {
+   786	                if anchor
+   787	                    .as_ref()
+   788	                    .is_none_or(|current| current.audit_sequence < checkpoint.audit_sequence)
+   789	                {
+   790	                    self.security.anchor_backend.publish(checkpoint).await?;
+   791	                    anchor = self
+   792	                        .security
+   793	                        .anchor_backend
+   794	                        .load_latest(
+   795	                            self.trust_domain,
+   796	                            self.security.environment_ref.as_str(),
+   797	                            &tenant_ref,
+   798	                        )
+   799	                        .await?;
+   800	                }
+   801	                if anchor.as_ref() != Some(checkpoint) {
+   802	                    return Err(IdrRuntimeErrorV1::Repository(
+   803	                        "database is behind or forked from the external audit anchor".to_string(),
+   804	                    ));
+   805	                }
+   806	            } else if anchor.is_some() || self.trust_domain == IdrTrustDomainV1::Production {
+   807	                return Err(IdrRuntimeErrorV1::Repository(
+   808	                    "database and external checkpoint state are inconsistent".to_string(),
+   809	                ));
+   810	            }
+   811	        }
+   812	        Ok(())
+   813	    }
+  2144	impl PostgresIdrOrchestratorV1 {
+  2145	    /// The only production mutation entry point. The PostgreSQL transaction,
+  2146	    /// DB clock, current Trust Root, proof consumption, transition engine,
+  2147	    /// audit and outbox are inseparable behind this concrete type.
+  2148	    pub async fn handle(
+  2149	        &self,
+  2150	        command: IdrCommandEnvelopeV1,
+  2151	    ) -> Result<IdrCommandReceiptV1, IdrRuntimeErrorV1> {
+  2152	        #[cfg(feature = "production")]
+  2153	        {
+  2154	            if self.trust_domain == IdrTrustDomainV1::Production {
+  2155	                enforce_production_command_release_gate(command.command())?;
+  2156	            }
+  2157	        }
+  2158	        if is_human_model_write(command.command()) && !cfg!(feature = "human-model-write") {
+  2159	            return Err(IdrRuntimeErrorV1::Repository(
+  2160	                "HUMAN MODEL LONG-TERM WRITE = NOT AUTHORIZED".to_string(),
+  2161	            ));
+  2162	        }
+  2163	        command.validate()?;
+  2164	        if command.trust_domain() != self.trust_domain {
+  2165	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2166	        }
+  2167	        if command.environment_ref() != &self.security.environment_ref {
+  2168	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  2169	        }
+  2170	        let (receipt, checkpoint) = self.transact_inner(&self.authority, &command).await?;
+  2171	        self.security.anchor_backend.publish(&checkpoint).await?;
+  2172	        sqlx::query(
+  2173	            "UPDATE idr_audit_checkpoints
+  2174	             SET published_at = clock_timestamp()
+  2175	             WHERE checkpoint_id = $1",
+  2176	        )
+  2177	        .bind(checkpoint.checkpoint_id)
+  2178	        .execute(&self.pool)
+  2179	        .await
+  2180	        .map_err(repository_error)?;
+  2181	        Ok(receipt)
+
+=== Migrator receives database URL through process arguments ===
+     1	use idr_store::PostgresIdrMigratorV1;
+     2	
+     3	#[tokio::main]
+     4	async fn main() {
+     5	    let mut arguments = std::env::args().skip(1);
+     6	    let database_url = arguments.next();
+     7	    let schema = arguments.next();
+     8	    if database_url.is_none() || schema.is_none() || arguments.next().is_some() {
+     9	        eprintln!("usage: idr-production-migrator <database-url> <idr_production_schema>");
+    10	        std::process::exit(2);
+    11	    }
+    12	    if let Err(error) =
+    13	        PostgresIdrMigratorV1::migrate_production(&database_url.unwrap(), &schema.unwrap()).await
+    14	    {
+    15	        eprintln!("IDR production migration failed: {error}");
+    16	        std::process::exit(1);
+    17	    }
+    18	}
+
+=== Master-spec and threat-model requirements ===
+     1	# IDR V1.3 threat model
+     2	
+     3	## Attackers
+     4	
+     5	- malicious/misconfigured host, adapter, model, tool or TypeScript client;
+     6	- replaying authenticated caller;
+     7	- compromised or revoked issuer/provider key;
+     8	- concurrent process racing the same aggregate/idempotency scope;
+     9	- worker crashing between claim, dispatch, Receipt or outbox delivery;
+    10	- database rollback/fork attacker;
+    11	- compromised application database login attempting DDL/trigger bypass;
+    12	- payload resource-exhaustion or schema-smuggling attacker;
+    13	- code consumer attempting to construct authority types directly.
+    14	
+    15	## Controls and dynamic evidence
+    16	
+    17	| Threat | Control | Test evidence |
+    18	| --- | --- | --- |
+    19	| Wire authority forgery | private fields, no Deserialize/constructor, capability token | `tests/compile_fail.rs` |
+    20	| Actor/caller impersonation | signed principal digest compared with command | vertical-slice impersonation attack |
+    21	| Proof replay/revocation | CallerAuthentication plus semantic proof on every command; unique proof ID/nonce; replay Receipt revalidation under current Trust Root/time | PostgreSQL replay/revocation tests |
+    22	| Cross-domain/cross-environment replay | signed domain/environment in Command, Proof, Trust Root, key policy, audience, refs and checkpoint key | production conformance foreign-domain/environment attacks |
+    23	| Expired upstream authority | every behavioral dependency is current and valid at trusted command time | five direct expired Context/Intent/Decision/Turn/Response attacks |
+    24	| Revoked Admission proof after admission | exact five-proof bundle persisted and reverified at every execution transition | Policy-key rotation attack before Reserve |
+    25	| Stale CAS/concurrency | `FOR UPDATE`, SERIALIZABLE, expected version | concurrent one-winner test |
+    26	| Response mutation/replay | Rust bytes digest, exact channel/audience, nonce uniqueness | vertical-slice tamper and existing TS tests |
+    27	| Authorization deny | typed proof assertion must be approve | vertical-slice deny attack |
+    28	| Admission bypass/substitution | exact authoritative Admission ref plus Action/provider/owner/idempotency binding and FK/dependency trigger | vertical-slice masquerade and provider-substitution attacks |
+    29	| Lost permit/duplicate execution | permanent append-only operation/idempotency Fence, durable attempt, legal recover/expire/reconcile transitions | Runtime-role ACL, privileged pre-restart duplicate and vertical-slice attacks |
+    30	| Late Receipt after invalidation | reconciliation preserves dispatch fact | vertical slice |
+    31	| Outcome/Human Model promotion forgery | observation/promotion proofs, exact three-object chain and bounded historical-evidence windows | boundary and vertical-slice tests |
+    32	| Dependency deletion/cycle | exact FK edges, recursive closure and cycle trigger | Store replay tests + PostgreSQL trigger |
+    33	| Outbox worker crash | leased `SKIP LOCKED` claims and owner-bound ack | vertical-slice crash recovery |
+    34	| DB rollback | external checkpoint comparison | rollback-behind-anchor test |
+    35	| Contract/projection mutation | restricted non-owner Runtime role, append-only/identity guards, runtime digest replay and Fence/Execution cross-check, checkpoint roots | PostgreSQL ACL, tamper/update/delete and privileged trigger-bypass attacks |
+    36	| Payload amplification | candidate tree budget plus rendered-byte and idempotency-key limits | runtime resource-budget attacks |
+    37	
+    38	## Residual high-risk boundaries
+    39	
+    40	The current external anchor is an interface with an in-memory shadow
+    41	implementation, not a production WORM/KMS backend. Checkpoints are not yet
+    42	signed by a protected IDR key. Capability/Policy services are represented by
+    43	signed proof assertions but no deployment-grade registry/configuration loader
+    44	is included. These are production blockers, not accepted risks.
+    45	
+   190	- LLM / Cognitive Service；
+   191	- 外部工具；
+   192	- Provider 返回值；
+   193	- 传入的时间；
+   194	- 传入的布尔 facts；
+   195	- 反序列化的 JSON；
+   196	- 已在内存中验证但尚未消费的 Proof；
+   197	- 文件系统旧快照；
+   198	- 普通 Rust library caller；
+   199	- Aegis Life adapter。
+   200	
+   201	以下是生产信任基座：
+   202	
+   203	- IDR Orchestrator；
+   204	- Authoritative Issuer；
+   205	- 当前 Trust Root Snapshot；
+   206	- PostgreSQL 事务与约束；
+   207	- Trusted Clock；
+   208	- 已配置的外部 Audit Checkpoint Anchor；
+   209	- 经过当前 Trust Root 在线复核的 Proof；
+   210	- IDR Store 在同一事务中生成的 Admission/Permit/State Event。
+   211	
+   212	---
+   213	
+   214	## 4. 不可违反的全局不变量
+   215	
+   216	以下不变量必须同时由类型、事务、数据库约束和攻击测试保证。
+   217	
+   218	### 4.1 权威对象
+   219	
+   220	1. 外部只能提交 Candidate、Request 或 Proof Envelope。
+   221	2. 权威 Contract 只能由 Orchestrator 内部的 Authoritative Issuer 创建。
+   222	3. 权威 Contract 不得暴露公共 `issue/new` 构造器。
+   223	4. 权威 Contract 不得从公共 wire JSON 直接 `Deserialize`。
+   224	5. Store 不接受调用者提供的“已权威”对象，只接受 Orchestrator Command。
+   225	6. 所有权威对象必须绑定 tenant、subject、run、turn、kind、ID、revision、digest、policy revision 和有效期。
+   226	7. successor 必须与 predecessor 的 kind、tenant、subject 和 lineage 规则一致。
+   227	
+   228	### 4.2 Proof
+   229	
+   230	8. 生产 Admission 不得消费调用者提供的裸布尔 facts。
+  1418	
+  1419	门槛：
+  1420	
+  1421	1. 本文全部 MUST/不得 条款已实现；
+  1422	2. P0 = 0；
+  1423	3. 安全、一致性和恢复类 P1 = 0；
+  1424	4. production feature 不包含 file store 或 mock trust components；
+  1425	5. 所有生产权威状态只能经 Orchestrator；
+  1426	6. 不存在裸 facts Admission；
+  1427	7. 不存在第二条执行资格通道；
+  1428	8. Action invalidation、lease、crash、reconciliation 全部有动态测试；
+  1429	9. Postgres concurrency/crash tests 通过；
+  1430	10. Rust workspace tests、strict Clippy、rustfmt 通过；
+  1431	11. TypeScript tests/typecheck 通过；
+  1432	12. Python tests 通过；
+
+=== Maintainer explicitly leaves provider credential incident open ===
+    19	## Round 10 finding response
+    20	
+    21	| Finding | Round 11 remediation candidate | Local evidence |
+    22	| --- | --- | --- |
+    23	| P0-00 provider-side leaked-key response | No code claim. Known local copies remain absent and packaging remains allowlisted/scanned. Provider revocation, rotation, last-use and billing review are still required. | source/package secret scans; known leaked paths absent |
+    24	| P0-01 privileged Runtime can release exactly-once slot | Production migration and Runtime features are compile-time exclusive. Production no longer auto-migrates; a separate migrator applies DDL. Migration 0006 creates schema-specific restricted Runtime and read-only auditor roles. Production startup rejects superuser/DDL/owner/trigger-capable identities. | separate migrator dynamic run; feature compile failures; PostgreSQL `42501` role attacks |
+    25	| P0-01 permanent operation/idempotency identity | New append-only `idr_operation_idempotency_fences` owns the unique trust-domain/environment/tenant/operation/idempotency tuple. Reservation rows reference the Fence and cannot replace its identity. Fence contents are included in startup integrity checks and the externally published execution-state root. | Fence UPDATE/DELETE rejection; privileged Reservation trigger bypass followed by pre-restart duplicate Fence INSERT rejection |
+    26	| P1-01 replay authentication bypass | Every command requires a current CallerAuthentication proof plus its command-specific proof set. Exact Receipt replay first rejects command-ID content conflicts, then revalidates the full original proof set using current database time and current Trust Root before returning the Receipt. | successful live replay; replay rejected after issuer revocation |
+    27	| P1-02 Receipt→Outcome historical time semantics | A dedicated historical-evidence gate requires exact current identity, matching trust domain, non-invalidation, observation after `valid_from`, and observation before `valid_until + 86,400` seconds. | boundary and invalidation tests |
+    28	| P1-03 Outcome→Human Model time semantics | The same explicit gate applies a 604,800-second maximum cognitive-use window to the exact Outcome record. | boundary and invalidation tests |
+    29	| P1-04 invalid Action state rollback | Deliver/dispatch discovery of invalid or expired authority now returns a successful governance transition that persists `Cancelled` before dispatch or `ReconciliationRequired` after dispatch. | both transition paths tested |
+    30	| P1-08 migration and Runtime identity conflation | Separate migration feature/binary, no Production `MIGRATOR.run`, schema-version-only startup, restricted Runtime role and read-only auditor role. | compile, migration and ACL matrix |
+    31	
+    49	## Explicitly unresolved blockers
+    50	
+    51	P0-00 remains open until the provider supplies redacted evidence of revocation,
+    52	rotation, last-use review, billing/usage review and replacement-key storage
+    53	boundaries.
+    54	
+    55	The following Round 10 findings are not falsely claimed closed by this code
+    56	snapshot:
+    57	
+    58	- transactionally serialized Trust Root control-plane epoch;
+    59	- commit-to-anchor publication gap and protected WORM/KMS signer/backend;
+    60	- historical Trust Root retention and full historical Proof signature replay;
+    61	- provider-facing signed Execution Permit and provider verification receipt;
+    62	- real response delivery/fan-out receipts and reconciliation;
+    63	- richer Outcome conflict/causality/partial-result semantics;
+    64	- complete Human Model sensitivity, retention, decay, inspection,
+    65	  correction/delete and legal-hold governance;
+    66	- verified production corpus migration/restore evidence;
+    67	- Git provenance and two consecutive clean independent reviews.
+    68	

@@ -1,0 +1,8 @@
+05e90d60c9497a8d814900c5521b6e3a4efd247c860459cd252aba1e7e32459c  ./IDR-V1.3-round9-independent-reaudit-report-2026-07-30.md
+c176a257a8e085e0a10ab2aaeb0fd8aeb7bb52a939e6098b588e36dfb9eb089a  ./README.md
+ad9778192f4fcf68bd6303df5b5aba61f2bfe2f3cfdaa8cd46cfeee02a72a6b2  ./SHA256SUMS
+158b866b0355aceba4a70917649b1c1435539a4f0f7f4e381579fc089431d576  ./idr-round8-round9-diff-summary.txt
+6adccbdc72e88aa315f6f6bbe0095bbc45b7c9a1e6ab4c8dee466a061a05f323  ./idr-v13-round9-independent-test-output.txt
+024f2b0e5392d942131de5386b1407fe147a6f3f8bca2bb701690407ed621113  ./idr-v13-round9-integrity-output.txt
+c35a79ca2e94c6d9bfd4e90c3634f6c8f5c87a97ea4fc650276dc3e523478826  ./idr-v13-round9-secret-scan.json
+deb3319072a15d7944e23ac15eb08fe560b49fe1369a406b783dce2d1916ab27  ./idr-v13-round9-static-audit-checks.txt

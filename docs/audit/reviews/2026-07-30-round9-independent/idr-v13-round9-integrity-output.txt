@@ -1,0 +1,32 @@
+IDR V1.3 Round 9 — independent package integrity summary
+Date: 2026-07-30
+
+Archive: IDR-V1.3-trust-chain-closure-round9-2026-07-30.zip
+Expected SHA-256: 17ab632494f5fed8e2ad67392212dd38e8c76b24af995094e95deb87db028544
+Actual SHA-256:   17ab632494f5fed8e2ad67392212dd38e8c76b24af995094e95deb87db028544
+Outer SHA match: PASS
+
+ZIP entries: 1051
+Path traversal entries: 0
+Symbolic links: 0
+Effective regular files: 865
+SHA256SUMS entries: 864
+SHA256SUMS verified: 864/864 PASS
+Manifest file itself excluded from its own manifest: yes
+
+Independent executable validation:
+- npm ci --offline: PASS
+- TypeScript tests: 12/12 PASS
+- TypeScript typecheck: PASS
+- Python tests: 9/9 PASS
+- cargo/rustc/psql unavailable in independent environment
+
+Secret scan:
+- Confirmed sk-… credential-like value: 1
+- File: Aegis-Life/apps/aegis-web/.aegis/credentials.json
+- Raw secret intentionally omitted
+- Value SHA-256 fingerprint: bc64419c2e86860e4a48f06186b6e076a62440d681eab439a13d854964552fcf
+- Third-party declaration false-positive: 1
+
+INTEGRITY_PASS=true
+CREDENTIAL_HYGIENE_PASS=false

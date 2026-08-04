@@ -1,0 +1,11 @@
+[package]
+name = "idr-production-api-compile-fail"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+idr-runtime = { path = "../../crates/idr-runtime", default-features = false, features = ["production", "shadow-mode"] }
+uuid = "1"

@@ -1,0 +1,115 @@
+=== TypeScript offline install/tests/typecheck ===
+
+added 3 packages, and audited 4 packages in 887ms
+
+found 0 vulnerabilities
+
+> @idr/interaction-client@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# (node:858) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: product boundary accepts the shared canonical multi-role input
+ok 1 - product boundary accepts the shared canonical multi-role input
+  ---
+  duration_ms: 1.80853
+  type: 'test'
+  ...
+# Subtest: product boundary normalizes UUIDs to canonical lowercase
+ok 2 - product boundary normalizes UUIDs to canonical lowercase
+  ---
+  duration_ms: 0.199888
+  type: 'test'
+  ...
+# Subtest: product boundary rejects a primary semantic role omitted from roles
+ok 3 - product boundary rejects a primary semantic role omitted from roles
+  ---
+  duration_ms: 0.41671
+  type: 'test'
+  ...
+# Subtest: product boundary rejects an unverified content digest
+ok 4 - product boundary rejects an unverified content digest
+  ---
+  duration_ms: 0.150814
+  type: 'test'
+  ...
+# Subtest: product boundary rejects actor-role impersonation
+ok 5 - product boundary rejects actor-role impersonation
+  ---
+  duration_ms: 0.238034
+  type: 'test'
+  ...
+# Subtest: product boundary rejects unknown canonical input fields
+ok 6 - product boundary rejects unknown canonical input fields
+  ---
+  duration_ms: 0.146097
+  type: 'test'
+  ...
+# Subtest: product boundary parses but does not recompute Rust decisions
+ok 7 - product boundary parses but does not recompute Rust decisions
+  ---
+  duration_ms: 0.350932
+  type: 'test'
+  ...
+# Subtest: assessment parser rejects contradictory cross-field states
+ok 8 - assessment parser rejects contradictory cross-field states
+  ---
+  duration_ms: 0.214609
+  type: 'test'
+  ...
+# Subtest: blocked assessment is rejected rather than marked succeeded
+ok 9 - blocked assessment is rejected rather than marked succeeded
+  ---
+  duration_ms: 0.45725
+  type: 'test'
+  ...
+# Subtest: authorization candidate is bound to exact action revision and digests
+ok 10 - authorization candidate is bound to exact action revision and digests
+  ---
+  duration_ms: 0.668945
+  type: 'test'
+  ...
+# (node:859) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated TypeScript matches Rust canonical and digest golden vectors
+ok 11 - generated TypeScript matches Rust canonical and digest golden vectors
+  ---
+  duration_ms: 3.841866
+  type: 'test'
+  ...
+# Subtest: generated TypeScript proof parser rejects unknown fields
+ok 12 - generated TypeScript proof parser rejects unknown fields
+  ---
+  duration_ms: 1.498279
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 150.893593
+
+> @idr/interaction-client@0.1.0 typecheck
+> tsc --noEmit
+
+
+=== Python tests ===
+test_actor_role_impersonation_is_rejected (test_evaluator.EvaluationTests.test_actor_role_impersonation_is_rejected) ... ok
+test_confirmation_bypass_is_detected (test_evaluator.EvaluationTests.test_confirmation_bypass_is_detected) ... ok
+test_deleted_base_hypothesis_is_detected (test_evaluator.EvaluationTests.test_deleted_base_hypothesis_is_detected) ... ok
+test_golden_supplier_output_passes (test_evaluator.EvaluationTests.test_golden_supplier_output_passes) ... ok
+test_invalid_input_digest_is_rejected (test_evaluator.EvaluationTests.test_invalid_input_digest_is_rejected) ... ok
+test_logical_time_must_fit_the_cross_language_wire_range (test_evaluator.EvaluationTests.test_logical_time_must_fit_the_cross_language_wire_range) ... ok
+test_unknown_input_fields_are_rejected (test_evaluator.EvaluationTests.test_unknown_input_fields_are_rejected) ... ok
+test_python_matches_rust_canonical_digest_and_signature_vectors (test_production_conformance.ProductionConformanceTests.test_python_matches_rust_canonical_digest_and_signature_vectors) ... ok
+test_python_observation_parser_rejects_unknown_fields (test_production_conformance.ProductionConformanceTests.test_python_observation_parser_rejects_unknown_fields) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.142s
+
+OK

@@ -1,0 +1,4 @@
+GIT_PROVENANCE=ABSENT
+SOURCE_ROOT=/Users/solan/projects/IDR
+OBSERVED_AT=2026-07-30
+DETAIL=The source root is not a Git work tree. No branch, commit, signed tag, author history, or clean-tree claim is available.

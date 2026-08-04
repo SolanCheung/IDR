@@ -1,0 +1,31 @@
+[package]
+name = "idr-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+orchestrator = []
+postgres-authority = ["orchestrator"]
+production = ["postgres-authority", "idr-protocol/production"]
+shadow-mode = ["postgres-authority", "human-model-write"]
+migration = ["postgres-authority"]
+legacy-shadow-api = ["idr-protocol/legacy-shadow-api"]
+trusted-clock = []
+human-model-write = []
+test-support = []
+
+[dependencies]
+async-trait.workspace = true
+idr-protocol = { path = "../idr-protocol", default-features = false, features = ["crypto-proofs"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+sqlx.workspace = true
+
+[dev-dependencies]
+trybuild = "1"

@@ -1,0 +1,18 @@
+IDR source:
+- path: /Users/solan/projects/IDR
+- .git directory: absent
+- branch/HEAD/provenance: unavailable
+
+Aegis Life reference host:
+- path: /Users/solan/projects/Aegis Life
+- branch: master
+- HEAD: 21363189d59cfac418791047bc9f7019e667a6c1
+- worktree was not clean when packaged:
+   M Cargo.lock
+   M Cargo.toml
+   M README.md
+  ?? apps/aegis-web/
+  ?? crates/idr-aegis-adapter/
+
+No commit, tag, push or history claim was created for this package. The inner
+SHA256SUMS and outer archive SHA-256 identify the delivered file snapshot.

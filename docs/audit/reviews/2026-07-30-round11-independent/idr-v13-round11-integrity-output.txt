@@ -1,0 +1,23 @@
+IDR V1.3 Round 11 independent integrity verification
+Audit date: 2026-07-30
+
+Outer SHA file:
+0a2dc9ef8797ff0f46b932275868006f41c7378f6d6888117c118344f8fc1564  /Users/solan/Downloads/IDR-V1.3-trust-chain-closure-round11-2026-07-30.zip
+Computed ZIP SHA-256:
+0a2dc9ef8797ff0f46b932275868006f41c7378f6d6888117c118344f8fc1564  /mnt/data/IDR-V1.3-trust-chain-closure-round11-2026-07-30.zip
+
+ZIP entries: 1074
+Path traversal entries: 0
+Symlink entries: 0
+
+Package manifest verification (performed before independent dependency installation):
+SHA256SUMS entries: 888
+OK=888 BAD=0
+Packaged files including SHA256SUMS: 889
+
+Independent secret scan:
+{
+  "root": "IDR-V1.3-trust-chain-closure-round11-2026-07-30",
+  "findings_count": 0,
+  "findings": []
+}

@@ -1,0 +1,129 @@
+IDR V1.3 Round 9 — independent static audit checks
+Date: 2026-07-30
+
+=== P0-00: credential leakage ===
+File: Aegis-Life/apps/aegis-web/.aegis/credentials.json
+Observed fields: version, provider, apiKey
+API key format: sk-…; length 38
+API key SHA-256 fingerprint only (raw secret intentionally omitted):
+bc64419c2e86860e4a48f06186b6e076a62440d681eab439a13d854964552fcf
+Placeholder markers found: false
+Package README claims real credentials were excluded: README.md:40-43
+Package inventory includes credential file: PACKAGE-INVENTORY.txt:34
+Aegis Web .gitignore excludes /.aegis/, but packaging included it.
+
+=== P0-01: expired dependency records remain consumable ===
+crates/idr-runtime/src/trust_chain.rs:2273-2307
+- require_record checks only existence + not invalidated.
+- require_exact_current_record checks only current ref/domain + not invalidated.
+- neither accepts trusted_now or checks valid_from/valid_until.
+
+Consumption sites without dependency-time validation:
+- RecordContext/Intent/Decision/Turn/Response/Action: trust_chain.rs:1126-1310
+- ConsumeResponseSend: trust_chain.rs:1226-1250
+New candidate issue validates only the new candidate validity: trust_chain.rs:1960-2024
+
+Expected attack tests not found:
+- expired_context_rejects_intent
+- expired_intent_rejects_decision
+- expired_decision_rejects_action
+- expired_response_cannot_send
+
+=== P0-02: only ExactAuthorization is reverified after Action Admission ===
+AdmitAction required proofs:
+- Capability, Authority, Policy, ExactAuthorization, ActionAdmission
+  trust_chain.rs:632-638
+
+Pre-dispatch command proof:
+- ExecutionPermit only
+  trust_chain.rs:639-643
+
+Current-root upstream revalidation:
+- reverify_bound_execution_authorization loads only exact_authorization_proof_id
+  postgres_authority.rs:1611-1681
+
+Current command proof validation:
+- verifies only proof kinds required by the current command
+  postgres_authority.rs:1557-1608
+
+Attack sequence:
+1. AdmitAction under root v1.
+2. Rotate to root v2 and revoke Capability/Authority/Policy issuer key.
+3. Keep ExactAuthorization and ExecutionPermit issuers active.
+4. Submit fresh ReserveExecution permit.
+5. Old Admission is still executable because only ExactAuthorization + current ExecutionPermit are verified.
+
+=== P0-03: mutable execution identity releases exactly-once slot ===
+Unique key:
+- idr_execution_reservations UNIQUE (tenant_ref, operation_ref, idempotency_key)
+  migrations/0001_idr_v13_trust_chain.sql:149-171
+
+No append-only/update guard for:
+- idr_execution_reservations
+- idr_execution_attempts
+  migrations/0004_round9_domain_validity_and_immutability.sql:315-382
+
+Startup relational check compares only:
+- action digest
+- action/admission validity
+- exact authorization kind/expiry
+  postgres_authority.rs:1077-1092
+
+It does not compare operation_ref, idempotency_key, provider_ref, owner_ref,
+state, aggregate_version, permit_id, nonce, lease or attempt fields against the
+Run Projection.
+
+Run Projection contains the omitted identity fields:
+- trust_chain.rs:684-706
+
+Checkpoint record_set_root covers only idr_contract_records:
+- postgres_authority.rs:2630-2678
+
+Reproduction SQL:
+UPDATE idr_execution_reservations
+SET operation_ref = 'operation:tampered',
+    idempotency_key = 'tampered-key'
+WHERE reservation_id = '<existing-reservation>';
+
+Expected result under current code:
+- no Round 9 append-only trigger rejects the UPDATE;
+- startup integrity does not compare these fields;
+- the original (tenant, operation, idempotency_key) unique slot is freed;
+- a second logical reservation can be inserted while the old Run Projection
+  remains dispatchable.
+
+=== P1 evidence ===
+Trust Root snapshot is in-process RwLock:
+- postgres_authority.rs:33-70
+Loaded once after DB row lock, not coordinated with commit:
+- postgres_authority.rs:1240-1327
+
+External anchor auto-publishes DB checkpoint if anchor missing/behind:
+- postgres_authority.rs:647-712
+DB transaction commits before anchor publication:
+- postgres_authority.rs:1553-1554, 1689-1722
+
+Anchor durability is a public self-declared trait boolean:
+- postgres_authority.rs:85-97, 299-315
+
+Historical proof startup scan compares fields but does not call verify_at:
+- postgres_authority.rs:913-973
+
+Migration upgrade issue:
+- old rows get epoch validity defaults, then immediate constraints are added
+  migrations/0004_round9_domain_validity_and_immutability.sql:1-86
+
+DB role separation absent:
+- same pool connects, runs migrations, and executes runtime
+  postgres_authority.rs:341-360
+- only REVOKE FROM PUBLIC, which does not restrict table owner
+  migration 0004:368-382
+
+=== P2 evidence ===
+Master Spec requires Unix milliseconds:
+- IDR-V1.3-Trust-Chain-Closure-Master-Spec.md:391-396
+Implementation uses epoch seconds:
+- postgres_authority.rs:239, 1240-1247
+
+No Git provenance:
+- GIT-STATE.txt

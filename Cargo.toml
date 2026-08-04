@@ -1,0 +1,24 @@
+[workspace]
+members = [
+    "crates/idr-protocol",
+    "crates/idr-runtime",
+    "crates/idr-store",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+async-trait = "0.1"
+ed25519-dalek = "2"
+fs2 = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "json", "migrate", "macros"] }
+thiserror = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+uuid = { version = "1", features = ["v4", "serde"] }

@@ -1,0 +1,46 @@
+ROUND11_MANIFEST_FILES 888
+ROUND12_MANIFEST_FILES 903
+ADDED 16
+REMOVED 1
+CHANGED 18
+
+=== ADDED ===
+./IDR/crates/idr-store/migrations/0007_round12_attested_authority_boundary.sql
+./IDR/docs/audit/IDR_V1_3_ROUND12_AUDIT_MANIFEST.md
+./IDR/docs/audit/IDR_V1_3_ROUND12_PACKAGE_README.md
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/IDR-V1.3-round11-independent-reaudit-report-2026-07-30.md
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/OUTER-ZIP.sha256
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/README.md
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/SHA256SUMS
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/idr-v13-round11-independent-test-output.txt
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/idr-v13-round11-integrity-output.txt
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/idr-v13-round11-secret-scan.json
+./IDR/docs/audit/reviews/2026-07-30-round11-independent/idr-v13-round11-static-audit-checks.txt
+./IDR/docs/trust-chain-closure/ROUND12-REAUDIT-RESPONSE.md
+./IDR/docs/trust-chain-closure/idr-v13-round12-validation-output.txt
+./IDR/tools/build_round12_audit_package.sh
+./IDR/tools/run_round12_validation.sh
+./ROUND12-REAUDIT-RESPONSE.md
+
+=== REMOVED ===
+./ROUND11-REAUDIT-RESPONSE.md
+
+=== CHANGED ===
+./AUDIT-MANIFEST.md
+./FILE-INVENTORY.txt
+./IDR/README.md
+./IDR/crates/idr-runtime/src/postgres_authority.rs
+./IDR/crates/idr-runtime/src/trust_chain.rs
+./IDR/crates/idr-store/tests/postgres_trust_chain.rs
+./IDR/crates/idr-store/tests/postgres_vertical_slice.rs
+./IDR/docs/trust-chain-closure/API-VISIBILITY.md
+./IDR/docs/trust-chain-closure/ARCHITECTURE.md
+./IDR/docs/trust-chain-closure/MIGRATION-GUIDE.md
+./IDR/docs/trust-chain-closure/POSTGRES-ROLE-SEPARATION.md
+./IDR/docs/trust-chain-closure/REMAINING-RISKS.md
+./IDR/docs/trust-chain-closure/STATE-MACHINES.md
+./IDR/docs/trust-chain-closure/TEST-MATRIX.md
+./IDR/docs/trust-chain-closure/VALIDATION-SUMMARY.md
+./IDR/tools/idr-production-migrator/src/main.rs
+./README.md
+./VALIDATION-SUMMARY.md

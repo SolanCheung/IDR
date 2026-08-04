@@ -1,0 +1,116 @@
+=== SHA256 ===
+./Aegis-Life/Cargo.lock: OK
+./Aegis-Life/Cargo.toml: OK
+./Aegis-Life/crates/idr-aegis-adapter/Cargo.toml: OK
+./Aegis-Life/crates/idr-aegis-adapter/src/lib.rs: OK
+./Aegis-Life/crates/idr-aegis-adapter/tests/reference_host.rs: OK
+./IDR/Cargo.lock: OK
+./IDR/Cargo.toml: OK
+./IDR/README.md: OK
+./IDR/contracts/human-centered/v1/fixtures/supplier-confirmation.json: OK
+./IDR/crates/idr-protocol/Cargo.toml: OK
+./IDR/crates/idr-protocol/src/human_centered/action.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/common.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/decision.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/execution.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/guards.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/human_model.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/input.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/intent.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/mod.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/outcome.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/response.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/runtime.rs: OK
+./IDR/crates/idr-protocol/src/human_centered/turn.rs: OK
+./IDR/crates/idr-protocol/src/lib.rs: OK
+./IDR/crates/idr-protocol/tests/idr_protocol_v1.rs: OK
+./IDR/crates/idr-runtime/Cargo.toml: OK
+./IDR/crates/idr-runtime/src/lib.rs: OK
+./IDR/crates/idr-runtime/tests/supplier_vertical_slice.rs: OK
+./IDR/crates/idr-store/Cargo.toml: OK
+./IDR/crates/idr-store/src/lib.rs: OK
+./IDR/crates/idr-store/tests/idr_store_v1.rs: OK
+./IDR/docs/architecture/idr-v1-implementation.md: OK
+./IDR/docs/audit/IDR_V1_3_AUDIT_MANIFEST.md: OK
+./IDR/docs/audit/IDR_V1_3_REMEDIATION.md: OK
+./IDR/integrations/aegis-life/README.md: OK
+./IDR/packages/interaction-client/.gitignore: OK
+./IDR/packages/interaction-client/README.md: OK
+./IDR/packages/interaction-client/package-lock.json: OK
+./IDR/packages/interaction-client/package.json: OK
+./IDR/packages/interaction-client/src/index.ts: OK
+./IDR/packages/interaction-client/tests/contracts.test.ts: OK
+./IDR/packages/interaction-client/tsconfig.json: OK
+./IDR/research/evaluation/README.md: OK
+./IDR/research/evaluation/pyproject.toml: OK
+./IDR/research/evaluation/src/idr_eval/__init__.py: OK
+./IDR/research/evaluation/src/idr_eval/contracts.py: OK
+./IDR/research/evaluation/src/idr_eval/evaluator.py: OK
+./IDR/research/evaluation/tests/test_evaluator.py: OK
+./README.md: OK
+./prior-audit/GPT-audit-report-before-remediation.txt: OK
+./source-design/IDR-V1.3-original-design.txt: OK
+=== TypeScript tests ===
+
+> @idr/interaction-client@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# (node:1349) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: product boundary accepts the shared canonical multi-role input
+ok 1 - product boundary accepts the shared canonical multi-role input
+  ---
+  duration_ms: 1.447325
+  type: 'test'
+  ...
+# Subtest: product boundary rejects a primary semantic role omitted from roles
+ok 2 - product boundary rejects a primary semantic role omitted from roles
+  ---
+  duration_ms: 0.296369
+  type: 'test'
+  ...
+# Subtest: product boundary rejects an unverified content digest
+ok 3 - product boundary rejects an unverified content digest
+  ---
+  duration_ms: 0.220947
+  type: 'test'
+  ...
+# Subtest: product boundary rejects actor-role impersonation
+ok 4 - product boundary rejects actor-role impersonation
+  ---
+  duration_ms: 0.133889
+  type: 'test'
+  ...
+# Subtest: product boundary parses but does not recompute Rust decisions
+ok 5 - product boundary parses but does not recompute Rust decisions
+  ---
+  duration_ms: 0.206096
+  type: 'test'
+  ...
+# Subtest: authorization submission is bound to exact action revision and digests
+ok 6 - authorization submission is bound to exact action revision and digests
+  ---
+  duration_ms: 0.348666
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.027523
+=== Python tests ===
+test_actor_role_impersonation_is_rejected (test_evaluator.EvaluationTests.test_actor_role_impersonation_is_rejected) ... ok
+test_confirmation_bypass_is_detected (test_evaluator.EvaluationTests.test_confirmation_bypass_is_detected) ... ok
+test_deleted_base_hypothesis_is_detected (test_evaluator.EvaluationTests.test_deleted_base_hypothesis_is_detected) ... ok
+test_golden_supplier_output_passes (test_evaluator.EvaluationTests.test_golden_supplier_output_passes) ... ok
+test_invalid_input_digest_is_rejected (test_evaluator.EvaluationTests.test_invalid_input_digest_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK

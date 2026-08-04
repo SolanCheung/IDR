@@ -1,0 +1,29 @@
+=== outer archive ===
+zip=IDR-V1.3-trust-chain-closure-round12-2026-07-30.zip
+zip_size_bytes=10413311
+expected_sha256=466e80188b8361ac0944071d0ae5ae6f7558625775844bf4ba8d111df69cae7f
+actual_sha256=466e80188b8361ac0944071d0ae5ae6f7558625775844bf4ba8d111df69cae7f
+outer_sha256_match=TRUE
+
+=== zip structure ===
+zip_entries=1090
+regular_file_entries=904
+duplicate_paths=0
+path_traversal_entries=0
+absolute_path_entries=0
+symlink_entries=0
+
+=== package SHA256SUMS ===
+manifest_entries=903
+manifest_pass=903
+manifest_fail=0
+package_original_regular_files_including_manifest=904
+
+=== embedded Round 11 independent evidence ===
+embedded_manifest_entries=6
+embedded_manifest_pass=6
+embedded_manifest_fail=0
+
+=== maintainer validation evidence ===
+validation_output_sha256=dc99db7418ca049119774376c3c7e4ae02365e5e4d1438f95aa46996794fea8d
+all_round12_validation_steps_pass_marker=TRUE

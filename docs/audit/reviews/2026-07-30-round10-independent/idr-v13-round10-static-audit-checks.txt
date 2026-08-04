@@ -1,0 +1,742 @@
+IDR V1.3 Round 10 static audit evidence
+
+=== P0 credential incident remains externally open ===
+    19	## Incident response for P0-00
+    20	
+    21	The credential-like `coding-plan` value identified by the auditor was confirmed
+    22	by SHA-256 fingerprint in two local Aegis configuration files. Both files and
+    23	all known Round 9 source-package copies containing that fingerprint were
+    24	permanently removed. The independent auditor bundle retains only redacted
+    25	metadata. Round 10 packaging uses an explicit source allowlist, rejects
+    26	credential/generated/dependency paths and symlinks, and runs a scanner that
+    27	emits only path, pattern, length and SHA-256 fingerprint.
+    28	
+    29	This local response is not sufficient to close P0-00. The provider-side key
+    30	must be revoked and rotated, downstream usage reviewed, and the replacement
+    31	must not be copied into an audit package. No source code or local test can
+    32	prove provider-side revocation.
+
+=== connect uses same PgPool for migrations and runtime ===
+   321	    async fn connect_for_domain(
+   322	        database_url: &str,
+   323	        schema: &str,
+   324	        security: PostgresSecurityContextV1,
+   325	        trust_domain: IdrTrustDomainV1,
+   326	    ) -> Result<Self, IdrRuntimeErrorV1> {
+   327	        validate_schema_name(schema)?;
+   328	        if security.trust_domain != trust_domain
+   329	            || security
+   330	                .trust_root_provider
+   331	                .current_snapshot()?
+   332	                .trust_domain()
+   333	                != trust_domain
+   334	            || security
+   335	                .trust_root_provider
+   336	                .current_snapshot()?
+   337	                .environment_ref()
+   338	                != &security.environment_ref
+   339	        {
+   340	            return Err(IdrRuntimeErrorV1::Repository(
+   341	                "security context or Trust Root crossed IDR trust domains".to_string(),
+   342	            ));
+   343	        }
+   344	        let connect_options = PgConnectOptions::from_str(database_url)
+   345	            .map_err(repository_error)?
+   346	            .disable_statement_logging();
+   347	        let search_path = schema.to_string();
+   348	        let pool = PgPoolOptions::new()
+   349	            .max_connections(10)
+   350	            .after_connect(move |connection, _metadata| {
+   351	                let search_path = search_path.clone();
+   352	                Box::pin(async move {
+   353	                    sqlx::query("SELECT set_config('search_path', $1, false)")
+   354	                        .bind(search_path)
+   355	                        .execute(connection)
+   356	                        .await?;
+   357	                    Ok(())
+   358	                })
+   359	            })
+   360	            .connect_with(connect_options)
+   361	            .await
+   362	            .map_err(repository_error)?;
+   363	        MIGRATOR.run(&pool).await.map_err(repository_error)?;
+   364	        let store = Self {
+   365	            pool,
+   366	            security,
+   367	            trust_domain,
+   368	            authority: OrchestratorAuthorityV1::new(),
+   369	        };
+   370	        store.verify_trust_domain().await?;
+   371	        store.verify_external_anchor().await?;
+   372	        Ok(store)
+
+=== full database integrity verification only at connect/startup ===
+   650	    async fn verify_external_anchor(&self) -> Result<(), IdrRuntimeErrorV1> {
+   651	        self.verify_database_integrity().await?;
+   652	        let rows = sqlx::query(
+   653	            "SELECT tenants.tenant_ref, latest.signed_checkpoint
+   654	             FROM (SELECT DISTINCT tenant_ref FROM idr_runs) AS tenants
+   655	             LEFT JOIN LATERAL (
+   656	                SELECT signed_checkpoint
+   657	                FROM idr_audit_checkpoints
+   658	                WHERE tenant_ref = tenants.tenant_ref
+   659	                  AND trust_domain = $1
+   660	                  AND environment_ref = $2
+   661	                ORDER BY audit_sequence DESC LIMIT 1
+   662	             ) AS latest ON true
+   663	             ORDER BY tenants.tenant_ref",
+   664	        )
+   665	        .bind(trust_domain_name(self.trust_domain)?)
+   666	        .bind(self.security.environment_ref.as_str())
+   667	        .fetch_all(&self.pool)
+   668	        .await
+   669	        .map_err(repository_error)?;
+   670	        for row in rows {
+   671	            let tenant_ref: String = row.try_get("tenant_ref").map_err(repository_error)?;
+   672	            let db_checkpoint: Option<Value> =
+   673	                row.try_get("signed_checkpoint").map_err(repository_error)?;
+   674	            let db_checkpoint = db_checkpoint
+   675	                .map(serde_json::from_value::<AuditCheckpointV1>)
+   676	                .transpose()
+   677	                .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?;
+   678	            let mut anchor = self
+   679	                .security
+   680	                .anchor_backend
+   681	                .load_latest(
+   682	                    self.trust_domain,
+   683	                    self.security.environment_ref.as_str(),
+   684	                    &tenant_ref,
+   685	                )
+   686	                .await?;
+   687	            if let Some(checkpoint) = &db_checkpoint {
+   688	                if anchor
+   689	                    .as_ref()
+   690	                    .is_none_or(|current| current.audit_sequence < checkpoint.audit_sequence)
+   691	                {
+   692	                    self.security.anchor_backend.publish(checkpoint).await?;
+   693	                    anchor = self
+   694	                        .security
+   695	                        .anchor_backend
+   696	                        .load_latest(
+   697	                            self.trust_domain,
+   698	                            self.security.environment_ref.as_str(),
+   699	                            &tenant_ref,
+   700	                        )
+   701	                        .await?;
+   702	                }
+   703	                if anchor.as_ref() != Some(checkpoint) {
+   704	                    return Err(IdrRuntimeErrorV1::Repository(
+   705	                        "database is behind or forked from the external audit anchor".to_string(),
+   706	                    ));
+   707	                }
+   708	            } else if anchor.is_some() || self.trust_domain == IdrTrustDomainV1::Production {
+   709	                return Err(IdrRuntimeErrorV1::Repository(
+   710	                    "database and external checkpoint state are inconsistent".to_string(),
+   711	                ));
+   712	            }
+   713	        }
+   714	        Ok(())
+   715	    }
+   716	
+   717	    async fn verify_database_integrity(&self) -> Result<(), IdrRuntimeErrorV1> {
+   718	        let audit_rows = sqlx::query(
+
+=== normal handle path does not call verify_database_integrity ===
+  1964	impl PostgresIdrOrchestratorV1 {
+  1965	    /// The only production mutation entry point. The PostgreSQL transaction,
+  1966	    /// DB clock, current Trust Root, proof consumption, transition engine,
+  1967	    /// audit and outbox are inseparable behind this concrete type.
+  1968	    pub async fn handle(
+  1969	        &self,
+  1970	        command: IdrCommandEnvelopeV1,
+  1971	    ) -> Result<IdrCommandReceiptV1, IdrRuntimeErrorV1> {
+  1972	        #[cfg(feature = "production")]
+  1973	        {
+  1974	            if self.trust_domain == IdrTrustDomainV1::Production {
+  1975	                enforce_production_command_release_gate(command.command())?;
+  1976	            }
+  1977	        }
+  1978	        if is_human_model_write(command.command()) && !cfg!(feature = "human-model-write") {
+  1979	            return Err(IdrRuntimeErrorV1::Repository(
+  1980	                "HUMAN MODEL LONG-TERM WRITE = NOT AUTHORIZED".to_string(),
+  1981	            ));
+  1982	        }
+  1983	        command.validate()?;
+  1984	        if command.trust_domain() != self.trust_domain {
+  1985	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  1986	        }
+  1987	        if command.environment_ref() != &self.security.environment_ref {
+  1988	            return Err(IdrRuntimeErrorV1::BindingMismatch);
+  1989	        }
+  1990	        let (receipt, checkpoint) = self.transact_inner(&self.authority, &command).await?;
+  1991	        self.security.anchor_backend.publish(&checkpoint).await?;
+  1992	        sqlx::query(
+  1993	            "UPDATE idr_audit_checkpoints
+  1994	             SET published_at = clock_timestamp()
+  1995	             WHERE checkpoint_id = $1",
+  1996	        )
+  1997	        .bind(checkpoint.checkpoint_id)
+  1998	        .execute(&self.pool)
+  1999	        .await
+  2000	        .map_err(repository_error)?;
+  2001	        Ok(receipt)
+  2002	    }
+
+=== execution mutation guards are trigger based ===
+    20	            AND new_state IN ('permit_delivered', 'expired', 'cancelled'))
+    21	        OR (old_state = 'permit_delivered'
+    22	            AND new_state IN ('dispatch_started', 'expired', 'cancelled'))
+    23	        OR (old_state IN ('dispatch_started', 'awaiting_provider')
+    24	            AND new_state IN (
+    25	                'reconciliation_required', 'succeeded', 'failed', 'rejected', 'compensated'
+    26	            ))
+    27	        OR (old_state = 'reconciliation_required'
+    28	            AND new_state IN ('succeeded', 'failed', 'rejected', 'compensated'))
+    29	        OR (old_state IN ('failed', 'rejected', 'expired') AND new_state = 'permit_issued');
+    30	$$;
+    31	
+    32	CREATE OR REPLACE FUNCTION idr_guard_execution_reservation_update_v5()
+    33	RETURNS trigger LANGUAGE plpgsql AS $$
+    34	BEGIN
+    35	    IF NEW.reservation_id IS DISTINCT FROM OLD.reservation_id
+    36	       OR NEW.run_id IS DISTINCT FROM OLD.run_id
+    37	       OR NEW.tenant_ref IS DISTINCT FROM OLD.tenant_ref
+    38	       OR NEW.action_record_id IS DISTINCT FROM OLD.action_record_id
+    39	       OR NEW.action_revision IS DISTINCT FROM OLD.action_revision
+    40	       OR NEW.action_admission_record_id IS DISTINCT FROM OLD.action_admission_record_id
+    41	       OR NEW.action_admission_revision IS DISTINCT FROM OLD.action_admission_revision
+    42	       OR NEW.operation_ref IS DISTINCT FROM OLD.operation_ref
+    43	       OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key
+    44	       OR NEW.provider_ref IS DISTINCT FROM OLD.provider_ref
+    45	       OR NEW.owner_ref IS DISTINCT FROM OLD.owner_ref
+    46	       OR NEW.action_digest IS DISTINCT FROM OLD.action_digest
+    47	       OR NEW.parameter_digest IS DISTINCT FROM OLD.parameter_digest
+    48	       OR NEW.request_digest IS DISTINCT FROM OLD.request_digest
+    49	       OR NEW.exact_authorization_proof_id IS DISTINCT FROM OLD.exact_authorization_proof_id
+    50	       OR NEW.action_valid_until IS DISTINCT FROM OLD.action_valid_until
+    51	       OR NEW.admission_valid_until IS DISTINCT FROM OLD.admission_valid_until
+    52	       OR NEW.authorization_valid_until IS DISTINCT FROM OLD.authorization_valid_until
+    53	       OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    54	        RAISE EXCEPTION 'Execution reservation identity and exactly-once key are immutable';
+    55	    END IF;
+    56	    IF NEW.aggregate_version <> OLD.aggregate_version + 1
+    57	       OR NEW.updated_at < OLD.updated_at
+    58	       OR NOT idr_execution_state_transition_allowed_v5(OLD.state, NEW.state) THEN
+    59	        RAISE EXCEPTION 'Execution reservation update is not a contiguous legal transition';
+    60	    END IF;
+    61	    RETURN NEW;
+    62	END;
+    63	$$;
+    64	
+    65	CREATE TRIGGER idr_execution_reservation_update_guard_v5
+    66	BEFORE UPDATE ON idr_execution_reservations
+    67	FOR EACH ROW EXECUTE FUNCTION idr_guard_execution_reservation_update_v5();
+    68	CREATE TRIGGER idr_execution_reservation_delete_guard_v5
+    69	BEFORE DELETE ON idr_execution_reservations
+    70	FOR EACH ROW EXECUTE FUNCTION idr_reject_authority_mutation_v4();
+    71	
+    72	CREATE OR REPLACE FUNCTION idr_guard_execution_attempt_update_v5()
+    73	RETURNS trigger LANGUAGE plpgsql AS $$
+    74	BEGIN
+    75	    IF NEW.reservation_id IS DISTINCT FROM OLD.reservation_id
+    76	       OR NEW.attempt IS DISTINCT FROM OLD.attempt
+    77	       OR NEW.permit_id IS DISTINCT FROM OLD.permit_id
+    78	       OR NEW.dispatch_nonce IS DISTINCT FROM OLD.dispatch_nonce
+    79	       OR NEW.lease_until IS DISTINCT FROM OLD.lease_until
+    80	       OR NEW.permit_valid_until IS DISTINCT FROM OLD.permit_valid_until
+    81	       OR NEW.provider_ref IS DISTINCT FROM OLD.provider_ref
+    82	       OR NEW.owner_ref IS DISTINCT FROM OLD.owner_ref THEN
+    83	        RAISE EXCEPTION 'Execution attempt identity and Permit binding are immutable';
+    84	    END IF;
+    85	    IF NOT idr_execution_state_transition_allowed_v5(OLD.state, NEW.state)
+    86	       OR (OLD.started_at IS NOT NULL AND NEW.started_at IS DISTINCT FROM OLD.started_at)
+    87	       OR (OLD.completed_at IS NOT NULL AND NEW.completed_at IS DISTINCT FROM OLD.completed_at)
+    88	       OR (NEW.completed_at IS NOT NULL AND NEW.started_at IS NULL) THEN
+    89	        RAISE EXCEPTION 'Execution attempt update is not a legal monotonic transition';
+    90	    END IF;
+    91	    RETURN NEW;
+    92	END;
+    93	$$;
+    94	
+    95	CREATE TRIGGER idr_execution_attempt_update_guard_v5
+    96	BEFORE UPDATE ON idr_execution_attempts
+    97	FOR EACH ROW EXECUTE FUNCTION idr_guard_execution_attempt_update_v5();
+    98	CREATE TRIGGER idr_execution_attempt_delete_guard_v5
+    99	BEFORE DELETE ON idr_execution_attempts
+   100	FOR EACH ROW EXECUTE FUNCTION idr_reject_authority_mutation_v4();
+
+=== Round 10 attack test disables trigger and only checks integrity afterward ===
+  1412	    // Attack regressions: execution_identity_update_is_rejected and
+  1413	    // operation_idempotency_slot_cannot_be_released_by_sql_update.
+  1414	    assert!(
+  1415	        sqlx::query(
+  1416	            "UPDATE idr_execution_reservations
+  1417	             SET operation_ref = 'operation:tampered',
+  1418	                 idempotency_key = 'tampered-key'
+  1419	             WHERE reservation_id = $1",
+  1420	        )
+  1421	        .bind(execution.reservation_id)
+  1422	        .execute(store.pool_for_test())
+  1423	        .await
+  1424	        .is_err(),
+  1425	        "Execution identity trigger must prevent releasing the exactly-once slot"
+  1426	    );
+  1427	    assert!(
+  1428	        sqlx::query(
+  1429	            "UPDATE idr_execution_attempts
+  1430	             SET dispatch_nonce = $2
+  1431	             WHERE reservation_id = $1 AND attempt = 1",
+  1432	        )
+  1433	        .bind(execution.reservation_id)
+  1434	        .bind("9".repeat(64))
+  1435	        .execute(store.pool_for_test())
+  1436	        .await
+  1437	        .is_err(),
+  1438	        "Execution attempt Permit identity must be immutable"
+  1439	    );
+  1440	    assert!(
+  1441	        sqlx::query("DELETE FROM idr_execution_reservations WHERE reservation_id = $1")
+  1442	            .bind(execution.reservation_id)
+  1443	            .execute(store.pool_for_test())
+  1444	            .await
+  1445	            .is_err(),
+  1446	        "Execution reservation identity must not be deletable"
+  1447	    );
+  1448	
+  1449	    // Attack regression: execution_index_tamper_detected_on_startup.
+  1450	    sqlx::query(
+  1451	        "ALTER TABLE idr_execution_reservations
+  1452	         DISABLE TRIGGER idr_execution_reservation_update_guard_v5",
+  1453	    )
+  1454	    .execute(store.pool_for_test())
+  1455	    .await
+  1456	    .unwrap();
+  1457	    sqlx::query(
+  1458	        "UPDATE idr_execution_reservations
+  1459	         SET operation_ref = 'operation:privileged-tamper',
+  1460	             idempotency_key = 'privileged-tamper'
+  1461	         WHERE reservation_id = $1",
+  1462	    )
+  1463	    .bind(execution.reservation_id)
+  1464	    .execute(store.pool_for_test())
+  1465	    .await
+  1466	    .unwrap();
+  1467	    assert!(matches!(
+  1468	        store.verify_external_anchor_for_test().await.unwrap_err(),
+  1469	        idr_runtime::IdrRuntimeErrorV1::IntegrityViolation
+  1470	    ));
+  1471	    sqlx::query(
+  1472	        "UPDATE idr_execution_reservations
+  1473	         SET operation_ref = 'operation:vertical',
+  1474	             idempotency_key = 'vertical-execution'
+  1475	         WHERE reservation_id = $1",
+  1476	    )
+  1477	    .bind(execution.reservation_id)
+  1478	    .execute(store.pool_for_test())
+  1479	    .await
+  1480	    .unwrap();
+  1481	    sqlx::query(
+  1482	        "ALTER TABLE idr_execution_reservations
+  1483	         ENABLE TRIGGER idr_execution_reservation_update_guard_v5",
+  1484	    )
+  1485	    .execute(store.pool_for_test())
+  1486	    .await
+  1487	    .unwrap();
+  1488	    store.verify_external_anchor_for_test().await.unwrap();
+
+=== idempotent replay returns before current time/proof verification ===
+  1431	    async fn transact_inner(
+  1432	        &self,
+  1433	        authority: &OrchestratorAuthorityV1,
+  1434	        command: &IdrCommandEnvelopeV1,
+  1435	    ) -> Result<(IdrCommandReceiptV1, AuditCheckpointV1), IdrRuntimeErrorV1> {
+  1436	        let mut transaction = self.pool.begin().await.map_err(repository_error)?;
+  1437	        transaction
+  1438	            .execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+  1439	            .await
+  1440	            .map_err(repository_error)?;
+  1441	
+  1442	        let command_digest = command.canonical_digest()?;
+  1443	        if let Some(row) = sqlx::query(
+  1444	            "SELECT trust_domain, environment_ref, tenant_ref, run_id, actor_ref, caller_ref,
+  1445	                    command_digest, receipt
+  1446	                 FROM idr_command_receipts WHERE command_id = $1",
+  1447	        )
+  1448	        .bind(command.command_id())
+  1449	        .fetch_optional(&mut *transaction)
+  1450	        .await
+  1451	        .map_err(repository_error)?
+  1452	        {
+  1453	            let same_command = row
+  1454	                .try_get::<String, _>("trust_domain")
+  1455	                .map_err(repository_error)?
+  1456	                == trust_domain_name(self.trust_domain)?
+  1457	                && row
+  1458	                    .try_get::<String, _>("environment_ref")
+  1459	                    .map_err(repository_error)?
+  1460	                    == self.security.environment_ref.as_str()
+  1461	                && row
+  1462	                    .try_get::<String, _>("tenant_ref")
+  1463	                    .map_err(repository_error)?
+  1464	                    == command.tenant_ref().as_str()
+  1465	                && row.try_get::<Uuid, _>("run_id").map_err(repository_error)? == command.run_id()
+  1466	                && row
+  1467	                    .try_get::<String, _>("actor_ref")
+  1468	                    .map_err(repository_error)?
+  1469	                    == command.actor_ref().as_str()
+  1470	                && row
+  1471	                    .try_get::<String, _>("caller_ref")
+  1472	                    .map_err(repository_error)?
+  1473	                    == command.caller_ref().as_str()
+  1474	                && row
+  1475	                    .try_get::<String, _>("command_digest")
+  1476	                    .map_err(repository_error)?
+  1477	                    == command_digest;
+  1478	            if !same_command {
+  1479	                return Err(IdrRuntimeErrorV1::IdempotencyConflict);
+  1480	            }
+  1481	            let mut receipt: IdrCommandReceiptV1 =
+  1482	                serde_json::from_value(row.try_get("receipt").map_err(repository_error)?)
+  1483	                    .map_err(|_| IdrRuntimeErrorV1::Serialization)?;
+  1484	            receipt.idempotent_replay = true;
+  1485	            let checkpoint = latest_checkpoint_for_tenant(
+  1486	                &mut transaction,
+  1487	                self.trust_domain,
+  1488	                self.security.environment_ref.as_str(),
+  1489	                command.tenant_ref().as_str(),
+  1490	            )
+  1491	            .await?;
+  1492	            transaction.commit().await.map_err(repository_error)?;
+  1493	            return Ok((receipt, checkpoint));
+  1494	        }
+  1495	
+  1496	        let trusted_now: i64 =
+  1497	            sqlx::query_scalar("SELECT EXTRACT(EPOCH FROM clock_timestamp())::bigint")
+  1498	                .fetch_one(&mut *transaction)
+  1499	                .await
+  1500	                .map_err(repository_error)?;
+  1501	        let trusted_now = u64::try_from(trusted_now).map_err(|_| {
+  1502	            IdrRuntimeErrorV1::Repository("database trusted time is invalid".to_string())
+  1503	        })?;
+  1504	
+  1505	        let projection_row = sqlx::query(
+
+=== Outcome and Human Model Candidate do not use current-valid helper ===
+  1726	        IdrCommandV1::RecordOutcome { outcome } => {
+  1727	            let receipt_ref = projection
+  1728	                .records
+  1729	                .get(&CandidateKindV1::ExecutionReceipt)
+  1730	                .filter(|receipt| !projection.invalidated_records.contains(*receipt))
+  1731	                .ok_or(IdrRuntimeErrorV1::MissingDependency)?;
+  1732	            validate_outcome_candidate(outcome.payload(), receipt_ref.record_digest())?;
+  1733	            let outcome_record = issue_record(
+  1734	                outcome,
+  1735	                command,
+  1736	                trusted_now,
+  1737	                verified_proofs,
+  1738	                projection.trust_domain,
+  1739	                record_id_for(&projection, CandidateKindV1::Outcome),
+  1740	                next_revision(&projection, CandidateKindV1::Outcome)?,
+  1741	            )?;
+  1742	            projection.outcome_binding = Some(outcome_record.record_ref().clone());
+  1743	            authoritative_record = Some(outcome_record);
+  1744	            event_type = "outcome_observed";
+  1745	        }
+  1746	        IdrCommandV1::ProposeHumanModelCandidate { candidate } => {
+  1747	            let outcome_ref = projection
+  1748	                .outcome_binding
+  1749	                .as_ref()
+  1750	                .filter(|outcome| {
+  1751	                    projection.records.get(&CandidateKindV1::Outcome) == Some(*outcome)
+  1752	                        && !projection.invalidated_records.contains(*outcome)
+  1753	                })
+  1754	                .ok_or(IdrRuntimeErrorV1::MissingDependency)?
+  1755	                .clone();
+  1756	            require_exact_record_payload(candidate.payload(), "outcome", &outcome_ref)?;
+  1757	            validate_human_model_candidate(candidate.payload())?;
+  1758	            let candidate_record = issue_record(
+  1759	                candidate,
+  1760	                command,
+  1761	                trusted_now,
+  1762	                verified_proofs,
+  1763	                projection.trust_domain,
+  1764	                record_id_for(&projection, CandidateKindV1::HumanModelCandidate),
+  1765	                next_revision(&projection, CandidateKindV1::HumanModelCandidate)?,
+  1766	            )?;
+  1767	            projection.human_model_candidate = Some(HumanModelCandidateProjectionV1 {
+  1768	                candidate_ref: candidate_record.record_ref().clone(),
+  1769	                outcome_ref,
+  1770	                materialized_payload: candidate.payload().clone(),
+  1771	            });
+  1772	            authoritative_record = Some(candidate_record);
+  1773	            event_type = "human_model_candidate_recorded";
+  1774	        }
+
+=== current-valid helper definitions ===
+  2316	fn require_record_at(
+  2317	    projection: &IdrRunProjectionV1,
+  2318	    kind: CandidateKindV1,
+  2319	    trusted_now: u64,
+  2320	) -> Result<(), IdrRuntimeErrorV1> {
+  2321	    projection
+  2322	        .records
+  2323	        .get(&kind)
+  2324	        .filter(|record| {
+  2325	            record.valid_from() <= trusted_now
+  2326	                && trusted_now < record.valid_until()
+  2327	                && !projection.invalidated_records.contains(*record)
+  2328	        })
+  2329	        .map(|_| ())
+  2330	        .ok_or(IdrRuntimeErrorV1::MissingDependency)
+  2331	}
+  2332	
+  2333	fn require_no_record(
+  2334	    projection: &IdrRunProjectionV1,
+  2335	    kind: CandidateKindV1,
+  2336	) -> Result<(), IdrRuntimeErrorV1> {
+  2337	    if projection.records.contains_key(&kind) {
+  2338	        Err(IdrRuntimeErrorV1::InvalidRunTransition)
+  2339	    } else {
+  2340	        Ok(())
+  2341	    }
+  2342	}
+  2343	
+  2344	fn require_exact_current_record_at(
+  2345	    projection: &IdrRunProjectionV1,
+  2346	    expected: &AuthoritativeRecordRefV1,
+  2347	    trusted_now: u64,
+  2348	) -> Result<(), IdrRuntimeErrorV1> {
+  2349	    if projection.records.get(&expected.candidate_kind()) == Some(expected)
+  2350	        && expected.trust_domain() == projection.trust_domain
+  2351	        && expected.valid_from() <= trusted_now
+  2352	        && trusted_now < expected.valid_until()
+  2353	        && !projection.invalidated_records.contains(expected)
+  2354	    {
+  2355	        Ok(())
+  2356	    } else {
+  2357	        Err(IdrRuntimeErrorV1::MissingDependency)
+  2358	    }
+  2359	}
+
+=== automatic action check mutates state then returns error ===
+  2412	fn ensure_current_execution_action(
+  2413	    projection: &mut IdrRunProjectionV1,
+  2414	    reservation_id: Uuid,
+  2415	    permit_id: Uuid,
+  2416	    trusted_now: u64,
+  2417	) -> Result<(), IdrRuntimeErrorV1> {
+  2418	    let action_ref = projection
+  2419	        .execution
+  2420	        .as_ref()
+  2421	        .filter(|execution| {
+  2422	            execution.reservation_id == reservation_id && execution.permit_id == permit_id
+  2423	        })
+  2424	        .map(|execution| execution.action_ref.clone())
+  2425	        .ok_or(IdrRuntimeErrorV1::InvalidExecutionTransition)?;
+  2426	    let authority_is_current = projection.records.get(&CandidateKindV1::Action)
+  2427	        == Some(&action_ref)
+  2428	        && !projection.invalidated_records.contains(&action_ref)
+  2429	        && projection
+  2430	            .execution
+  2431	            .as_ref()
+  2432	            .is_some_and(|execution| !execution_authority_expired(execution, trusted_now));
+  2433	    if !authority_is_current {
+  2434	        let execution = projection
+  2435	            .execution
+  2436	            .as_mut()
+  2437	            .ok_or(IdrRuntimeErrorV1::InvalidExecutionTransition)?;
+  2438	        execution.state = if matches!(
+  2439	            execution.state,
+  2440	            ExecutionAggregateStateV1::DispatchStarted
+  2441	                | ExecutionAggregateStateV1::AwaitingProvider
+  2442	        ) {
+  2443	            ExecutionAggregateStateV1::ReconciliationRequired
+  2444	        } else {
+  2445	            ExecutionAggregateStateV1::Cancelled
+  2446	        };
+  2447	        return Err(IdrRuntimeErrorV1::ActionInvalidated);
+  2448	    }
+  2449	    Ok(())
+  2450	}
+  2451	
+  2452	fn execution_authority_expired(execution: &ExecutionProjectionV1, trusted_now: u64) -> bool {
+  2453	    trusted_now >= execution.lease_until
+  2454	        || trusted_now >= execution.action_valid_until
+  2455	        || trusted_now >= execution.admission_valid_until
+  2456	        || trusted_now >= execution.authorization_valid_until
+  2457	        || trusted_now >= execution.permit_valid_until
+  2458	}
+
+=== startup replays contract digest and execution root ===
+   815	                SELECT payload FROM idr_audit_events
+   816	                WHERE run_id = run.run_id ORDER BY sequence DESC LIMIT 1
+   817	             ) audit ON true",
+   818	        )
+   819	        .fetch_all(&self.pool)
+   820	        .await
+   821	        .map_err(repository_error)?;
+   822	        for row in run_rows {
+   823	            let projection: Value = row.try_get("projection").map_err(repository_error)?;
+   824	            let row_domain: String = row.try_get("trust_domain").map_err(repository_error)?;
+   825	            let row_environment: String =
+   826	                row.try_get("environment_ref").map_err(repository_error)?;
+   827	            let stored_digest: String =
+   828	                row.try_get("projection_digest").map_err(repository_error)?;
+   829	            let audited_digest: Option<String> = row
+   830	                .try_get("audited_projection_digest")
+   831	                .map_err(repository_error)?;
+   832	            if row_domain != trust_domain_name(self.trust_domain)?
+   833	                || row_environment != self.security.environment_ref.as_str()
+   834	                || projection.get("trust_domain").and_then(Value::as_str)
+   835	                    != Some(row_domain.as_str())
+   836	                || projection.get("environment_ref").and_then(Value::as_str)
+   837	                    != Some(row_environment.as_str())
+   838	                || projection_digest_v1(&projection)? != stored_digest
+   839	                || audited_digest.as_deref() != Some(stored_digest.as_str())
+   840	            {
+   841	                return Err(IdrRuntimeErrorV1::IntegrityViolation);
+   842	            }
+   843	            let projection: IdrRunProjectionV1 = serde_json::from_value(projection)
+   844	                .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?;
+   845	            self.verify_action_admission_projection(&projection).await?;
+   846	            self.verify_current_execution_projection(&projection)
+   847	                .await?;
+   848	        }
+   849	
+   850	        let contract_rows = sqlx::query(
+   851	            "SELECT record_id, revision, candidate_kind, trust_domain, environment_ref,
+   852	                    run_id, tenant_ref, subject_ref, record_digest, record,
+   853	                    EXTRACT(EPOCH FROM valid_from)::bigint AS valid_from,
+   854	                    EXTRACT(EPOCH FROM valid_until)::bigint AS valid_until
+   855	             FROM idr_contract_records
+   856	             ORDER BY record_id, revision",
+   857	        )
+   858	        .fetch_all(&self.pool)
+   859	        .await
+   860	        .map_err(repository_error)?;
+   861	        for row in contract_rows {
+   862	            let record: Value = row.try_get("record").map_err(repository_error)?;
+   863	            let reference = verify_authoritative_record_value_v1(&record)?;
+   864	            let revision: i64 = row.try_get("revision").map_err(repository_error)?;
+   865	            let valid_from: i64 = row.try_get("valid_from").map_err(repository_error)?;
+   866	            let valid_until: i64 = row.try_get("valid_until").map_err(repository_error)?;
+   867	            if reference.record_id()
+   868	                != row
+   869	                    .try_get::<Uuid, _>("record_id")
+   870	                    .map_err(repository_error)?
+   871	                || reference.revision()
+   872	                    != u64::try_from(revision).map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?
+   873	                || enum_name(&reference.candidate_kind())?
+   874	                    != row
+   875	                        .try_get::<String, _>("candidate_kind")
+   876	                        .map_err(repository_error)?
+   877	                || reference.trust_domain() != self.trust_domain
+   878	                || trust_domain_name(reference.trust_domain())?
+   879	                    != row
+   880	                        .try_get::<String, _>("trust_domain")
+   881	                        .map_err(repository_error)?
+   882	                || reference.environment_ref() != &self.security.environment_ref
+   883	                || reference.environment_ref().as_str()
+   884	                    != row
+   885	                        .try_get::<String, _>("environment_ref")
+   886	                        .map_err(repository_error)?
+   887	                || reference.valid_from()
+   888	                    != u64::try_from(valid_from)
+   889	                        .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?
+   890	                || reference.valid_until()
+   891	                    != u64::try_from(valid_until)
+   892	                        .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?
+   893	                || reference.record_digest()
+   894	                    != row
+   895	                        .try_get::<String, _>("record_digest")
+   896	                        .map_err(repository_error)?
+   897	                || record.get("run_id").and_then(Value::as_str)
+   898	                    != Some(
+   899	                        row.try_get::<Uuid, _>("run_id")
+   900	                            .map_err(repository_error)?
+   901	                            .to_string()
+   902	                            .as_str(),
+   903	                    )
+   904	                || record.get("tenant_ref").and_then(Value::as_str)
+   905	                    != Some(
+   906	                        row.try_get::<String, _>("tenant_ref")
+   907	                            .map_err(repository_error)?
+   908	                            .as_str(),
+   909	                    )
+   910	                || record.get("subject_ref").and_then(Value::as_str)
+   911	                    != Some(
+   912	                        row.try_get::<String, _>("subject_ref")
+   913	                            .map_err(repository_error)?
+   914	                            .as_str(),
+   915	                    )
+   916	            {
+   917	                return Err(IdrRuntimeErrorV1::IntegrityViolation);
+   918	            }
+   919	        }
+  1134	        let checkpoint_rows = sqlx::query(
+  1135	            "SELECT DISTINCT ON (tenant_ref)
+  1136	                    checkpoint_id, trust_domain, environment_ref, tenant_ref,
+  1137	                    audit_sequence, chain_root, record_set_root, execution_state_root,
+  1138	                    signed_checkpoint
+  1139	             FROM idr_audit_checkpoints
+  1140	             ORDER BY tenant_ref, audit_sequence DESC",
+  1141	        )
+  1142	        .fetch_all(&self.pool)
+  1143	        .await
+  1144	        .map_err(repository_error)?;
+  1145	        for row in checkpoint_rows {
+  1146	            let checkpoint: AuditCheckpointV1 =
+  1147	                serde_json::from_value(row.try_get("signed_checkpoint").map_err(repository_error)?)
+  1148	                    .map_err(|_| IdrRuntimeErrorV1::IntegrityViolation)?;
+  1149	            let tenant_ref: String = row.try_get("tenant_ref").map_err(repository_error)?;
+  1150	            if checkpoint.checkpoint_id
+  1151	                != row
+  1152	                    .try_get::<Uuid, _>("checkpoint_id")
+  1153	                    .map_err(repository_error)?
+  1154	                || trust_domain_name(checkpoint.trust_domain)?
+  1155	                    != row
+  1156	                        .try_get::<String, _>("trust_domain")
+  1157	                        .map_err(repository_error)?
+  1158	                || checkpoint.environment_ref
+  1159	                    != row
+  1160	                        .try_get::<String, _>("environment_ref")
+  1161	                        .map_err(repository_error)?
+  1162	                || checkpoint.tenant_ref != tenant_ref
+  1163	                || checkpoint.audit_sequence
+  1164	                    != row
+  1165	                        .try_get::<i64, _>("audit_sequence")
+  1166	                        .map_err(repository_error)?
+  1167	                || checkpoint.chain_root
+  1168	                    != row
+  1169	                        .try_get::<String, _>("chain_root")
+  1170	                        .map_err(repository_error)?
+  1171	                || checkpoint.record_set_root
+  1172	                    != row
+  1173	                        .try_get::<String, _>("record_set_root")
+  1174	                        .map_err(repository_error)?
+  1175	                || checkpoint.record_set_root
+  1176	                    != record_set_root_for_pool(&self.pool, &tenant_ref).await?
+  1177	                || checkpoint.execution_state_root
+  1178	                    != row
+  1179	                        .try_get::<String, _>("execution_state_root")
+  1180	                        .map_err(repository_error)?
+  1181	                || checkpoint.execution_state_root
+  1182	                    != execution_state_root_for_pool(&self.pool, &tenant_ref).await?
+  1183	            {
+  1184	                return Err(IdrRuntimeErrorV1::IntegrityViolation);
+  1185	            }
+  1186	        }
+  1187	        Ok(())
+
+=== no database role separation in migrations ===
+
+=== unresolved production blockers acknowledged by maintainer ===
+    51	## Unresolved production blockers
+    52	
+    53	The Round 9 P1 control-plane and product-semantic findings remain open,
+    54	including transactional Trust Root rotation, post-commit external publication,
+    55	protected WORM/KMS anchor and signer, issuer/role separation, provider-facing
+    56	signed capability, delivery receipts, historical-proof validation policy,
+    57	Outcome aggregation, Human Model lifecycle controls and production migration
+    58	evidence. Git provenance and two consecutive clean independent reviews are
+    59	also absent.

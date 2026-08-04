@@ -1,0 +1,1161 @@
+he Human-Centered Intent & Decision Runtime V1.3
+
+Round 4 严格复审报告
+
+审计对象：IDR-V1.3-reaudit-round4-2026-07-29.zip审计日期：2026-07-29系统正式名称：The Human-Centered Intent & Decision Runtime（IDR）审计基准：source-design/IDR-V1.3-original-design.txt、仓库实现、测试和 Round 3 审计问题压缩包 SHA-256：f86f7f8fb10085d2847ed23a1a8eee658ebe09029c37182ccfe79590849411cc
+
+一、总体结论
+
+PRODUCTION TRUST ROOT = BLOCKED
+FOUNDATION / SHADOW MODE = ACCEPTABLE WITH LIMITATIONS
+PRODUCTION AUTHORIZATION = NOT AUTHORIZED
+PRODUCTION EXECUTION = NOT AUTHORIZED
+HUMAN MODEL LONG-TERM WRITE = NOT AUTHORIZED
+AEGIS PRODUCTION ADAPTER = NOT AUTHORIZED
+
+Round 4 是一次实质性整改，不是仅修改文档。上一轮最危险的 Execution Permit 局部漏洞已经被修复：
+
+Deny 授权不能生成 Permit；
+
+Permit 租期不能超过 Authorization 或 Action 的有效期；
+
+provider、owner、attempt、lease、nonce、idempotency、tenant、scope、purpose、policy revision 均进入签名 subject digest；
+
+VerifiedProofV1 不可反序列化、不可 Clone；
+
+Store 在锁内持久化消费 proof ID、nonce 和 authorization ID 后才返回 opaque Permit；
+
+同一 Proof、nonce 或 Authorization 直接重放会被拒绝；
+
+跨 Contract Kind 共用 UUID 的失效传播绕过已修复；
+
+Fast Path Block 现在进入 Rejected，不再被记为成功；
+
+Proof expected binding、半开时间窗口和 TypeScript UUID 规范化已加强。
+
+这些修复分别可见于：
+
+IDR/crates/idr-protocol/src/human_centered/execution.rs:23-177,229-288
+
+IDR/crates/idr-store/src/lib.rs:267-335,476-508
+
+IDR/crates/idr-protocol/src/human_centered/trust.rs:319-477
+
+IDR/crates/idr-runtime/src/lib.rs:60-74
+
+但是，Round 4 仍然没有建立完整生产信任链。最关键的问题已经从“Permit 字段未绑定”转移为：
+
+Permit、旧 execution claim、Receipt 和 Orchestrator 尚未组成一个唯一、可恢复、可证明的执行状态机。
+
+当前至少存在两条彼此独立的执行资格通道：
+
+Verified Proof → issue_execution_permit() → opaque Permit
+
+Action + caller booleans → claim_action_execution() → Admit
+
+这两条通道没有互斥。同一 Action 可以先取得签名 Permit，再通过旧 claim 通道取得 Admit。此外，两个不同的 Exact Authorization 可以分别为同一 Action 签发两个 Permit。由此产生并发重复执行风险。
+
+本轮共确认：
+
+P0：14 项
+
+P1：10 项
+
+P2：5 项
+
+这些问题并不否定当前 Protocol Foundation 的价值，但足以阻止把它认定为生产 Trust Root。
+
+二、审计范围与独立验证
+
+2.1 审计包完整性
+
+ZIP 条目：462
+
+排除目录和 macOS 元数据后的有效文件：338
+
+SHA256SUMS：337/337 通过
+
+路径穿越：0
+
+符号链接：0
+
+Round 3 与 Round 4 的有效清单均为 337 个文件（不计校验清单自身）
+
+Round 4 相比 Round 3：新增 4、删除 4、修改 20
+
+2.2 独立执行结果
+
+项目
+
+独立结果
+
+Python evaluation tests
+
+7/7 PASS
+
+TypeScript Node tests
+
+10/10 PASS
+
+ZIP SHA-256 清单
+
+337/337 PASS
+
+Rust tests
+
+未独立执行：环境没有 cargo / rustc
+
+TypeScript typecheck
+
+未独立完成：审计包不含完整 node_modules，离线 npm ci 未完成，缺少 @types/node
+
+维护者提供的 VALIDATION-SUMMARY.md:8-18 声明 Rust 38 项测试、Clippy、rustfmt、TypeScript typecheck、Aegis adapter tests 均通过。该记录是维护者证据，不替代本次独立执行。
+
+三、Round 3 问题关闭情况
+
+Round 3 重点问题
+
+Round 4 结论
+
+Deny 授权可生成 Permit
+
+已关闭
+
+Permit 租期可超过授权有效期
+
+已关闭（创建/验证阶段）；Store 消费时仍有 TOCTOU，见 P0-06
+
+provider/owner/attempt/nonce 未签名
+
+已关闭
+
+同一 Proof 可直接重复派生 Permit
+
+已关闭（同 proof/nonce/auth ID）
+
+跨 Kind 同 UUID 失效绕过
+
+已关闭
+
+Fast Path Block 被记为成功
+
+已关闭
+
+Expected Proof Binding 不完整
+
+已关闭
+
+Authorization 本身无可信签发
+
+未关闭
+
+Guard/Admission facts 无 provenance
+
+未关闭
+
+Canonical Input 无认证入口
+
+未关闭
+
+claim 无 lease/recovery
+
+未关闭
+
+Receipt 无 Permit/provider proof
+
+未关闭
+
+Human Model/Outcome 证明链
+
+未关闭
+
+Orchestration Runtime 仅接口
+
+未关闭
+
+外部 anti-rollback
+
+未关闭
+
+需要特别区分：Round 4 已能拒绝“同一个 Authorization ID”的 Permit 重放，但没有阻止为同一 Action 生成多个不同 Authorization。它解决了 token replay，没有解决 action-level exactly-once。
+
+四、原始设计与代码对应关系
+
+原始设计把 Orchestration Runtime 定义为贯穿全链路的 Control Plane，而不是一个普通数据层；同时要求 Intent Fast Path、Decision Necessity、Response Admission、Action Admission 和 Human Model Update Gate 成为实际治理节点。设计位置见：
+
+source-design/IDR-V1.3-original-design.txt:515-625：Intent Fast Path
+
+...:626-735：Decision Necessity
+
+...:873-910：Action Admission
+
+...:911-971：Execution Receipt / Outcome
+
+...:972-1009：Human Model Update Gate
+
+...:1010-1043：Orchestration Runtime
+
+...:1044+：Audit Ledger 和治理平面
+
+设计能力
+
+当前实现
+
+审计结论
+
+Canonical Input
+
+Rust/TS/Python shape、actor-role matrix
+
+结构存在，来源真实性未建立
+
+Intent Fast Path
+
+Rust 确定性纯函数 + runtime assessment
+
+条件正确，facts 可伪造
+
+Decision Necessity
+
+Rust 确定性纯函数
+
+条件正确，facts 无证据
+
+Intent/Decision Contract
+
+完整类型、摘要、依赖
+
+类型较成熟，颁发路径未封闭
+
+Turn Coordination
+
+Mode selector、DAG、Gate、顺序校验
+
+结构较强，仍由 caller facts 驱动
+
+Response Admission
+
+实际 bytes 摘要、policy window
+
+内容绑定增强，Policy facts/时间无可信证明
+
+Action Admission
+
+合约、Authorization、facts gate
+
+仍接受裸布尔 facts；与 Permit 路径分裂
+
+Execution Permit
+
+完整签名绑定、Store replay consumption
+
+局部实现强，但 exactly-once/恢复未闭合
+
+Execution Receipt
+
+独立 Contract、Store 跨对象校验
+
+不绑定 Permit、dispatch、provider signature
+
+Outcome Record
+
+独立 Contract、Receipt/Action 对应校验
+
+没有 Observation Attestation
+
+Human Model Gate
+
+不可直接构造 Gate Decision
+
+Gate facts/Assertion wire 仍可绕过和复用
+
+Durable Store
+
+锁、原子 rename、fsync、重放、失效重算、anchor
+
+单节点结构增强；仍无外部 anti-rollback/WAL/outbox
+
+Orchestration Runtime
+
+Step/Run/Command/CAS trait
+
+只有模型与接口，不是可运行控制平面
+
+Aegis adapter
+
+Host Authority Candidate、shadow assessment
+
+反向耦合明显降低；生产权限衰减未实现
+
+五、语言职责边界
+
+Rust
+
+Rust 承担 Contract、Gate、Proof、Permit、Store 和 Orchestration 类型，方向符合“生产信任根”。但 Rust 内部仍没有进一步区分：
+
+不可信 Rust 调用者 / Host Adapter
+vs.
+IDR Authority Issuer / Runtime Internal
+
+由于核心 authoritative Contract 公开 issue()、公开 Deserialize，Store 又公开接受完整 Contract，因此“代码写在 Rust”不等于“只能由可信 Runtime 颁发”。这是 P0-01。
+
+TypeScript
+
+@idr/interaction-client 主要做 transport validation、assessment parsing 和精确授权提交，没有复制 Rust 的 Fast Path/Decision/Action 裁决。职责边界总体正确。Round 4 又增加了：
+
+UUID 规范化；
+
+actor-role impersonation 拒绝；
+
+unknown field 拒绝；
+
+Assessment 跨字段一致性；
+
+Block → Rejected 语义。
+
+独立运行测试 10/10 通过。
+
+Python
+
+Python 仍限定为离线 fixture evaluation，不参与权限、执行和 Human Model 写入。独立测试 7/7 通过。当前没有发现 Python 越界成为生产裁决源。
+
+Aegis Life
+
+Adapter 只产生 HostAuthorityCandidateV1，不直接构造 IDR Authority Context；并已移除未使用的 idr-store 依赖。这一方向正确。不过 assess_shadow 仍接收 Host 提供的普通 facts，因此它只能作为 shadow 验证宿主，不能升级为生产 Authority Adapter。
+
+六、已正确实现的部分
+
+Execution Permit 完整请求绑定execution.rs:29-45,106-177 把 Action ref、Authorization ID/digest、provider、owner、attempt、lease、nonce、idempotency、tenant、scope、purpose、policy revision 放入 request digest 和 expected proof binding。
+
+Deny 和过期租期拒绝execution.rs:50-76,130-160 明确要求 AuthorizationDecisionV1::Approve，并限制 lease 不超过 Authorization 和 Action 的有效窗口。
+
+Proof 验证是完整 expected-binding 验证trust.rs:319-440 比较 proof kind、issuer、subject ref/digest、tenant、scope、purpose、policy revision、key policy、时效和撤销，再验证 Ed25519 signature。
+
+Verified Proof 不能从 wire 构造或 Clonetrust.rs:457-477 只暴露只读 claims/key/verified_at。
+
+Store 同 proof/nonce/auth ID 原子防重放store/src/lib.rs:267-335 在文件锁内重读 snapshot、校验 currentness、检查 replay、持久化 consumption 后返回 Permit。
+
+失效传播按 Kind + ID lineage 处理store/src/lib.rs:476-508 不再仅按 UUID 跳过同 lineage。
+
+Store 的结构完整性显著加强包括：同 revision 分叉拒绝、重放重算 invalidation、空 snapshot 拒绝、跨上下文 successor 拒绝、锁后重读、原子 rename、file/dir fsync、本地 digest anchor。
+
+Response 绑定实际渲染内容response.rs:199-257 在 Rust 中计算真实内容摘要并在 admission 重新计算。
+
+Action/Authorization 时间窗口采用半开区间action.rs:242-266,327-338 和 Response/Proof 统一为到期时刻即失效。
+
+Turn 和 Decision 结构不变量增强Turn DAG、逐 Action authorization gate、模式顺序和 Decision selected option/weights 已有较强结构校验。
+
+七、缺失的设计能力
+
+Runtime-issued sealed Contract Envelope；
+
+认证 Gateway 和 Input Admission Proof；
+
+Guard facts 的 provenance、evidence snapshot 和签名证明；
+
+Exact Authorization 的 issuer signature、authentication context、revocation distribution；
+
+Action Admission 对 Capability/Authority/Policy/Precondition Proof 的直接验证；
+
+统一且唯一的 Execution Reservation State Machine；
+
+Permit 在 Store 消费时的可信当前时间复核；
+
+Action-level / idempotency-level exactly-once Permit index；
+
+Permit delivery、lease renew、takeover、reconcile 和 crash recovery；
+
+Provider-signed Receipt 与 Permit/attempt/dispatch 绑定；
+
+Outcome Observation Attestation；
+
+Human Model Candidate → Promotion → Assertion 证明链；
+
+可运行 Orchestrator repository、scheduler、event loop；
+
+外部 WORM/透明日志 anti-rollback checkpoint；
+
+跨语言 canonical encoding 和签名 golden vectors。
+
+八、P0 问题
+
+P0-01：权威 Contract 的颁发与持久化路径仍未封闭
+
+证据
+
+核心对象仍同时公开 Deserialize 和 issue()：
+
+action.rs:23-82
+
+intent.rs:146-190
+
+decision.rs:127-181
+
+response.rs:48-102
+
+outcome.rs:29-87
+
+human_model.rs:147-235
+
+execution.rs:290-362
+
+Store 公开枚举和 commit() 接受完整 Contract：
+
+idr-store/src/lib.rs:29-81
+
+idr-store/src/lib.rs:186-264
+
+可复现方式
+
+任意链接 IDR crate 的 Rust Host 可直接调用公开 issue()，或从 JSON 反序列化一个摘要一致的 authoritative object，再调用 Store commit()。流程不需要 Runtime-issued seal。
+
+影响
+
+Host Adapter、测试辅助代码或被攻陷的同进程组件可制造 Intent、Decision、Action、Receipt、Outcome 或 Human Model Assertion。Rust 语言边界存在，但 Rust 内部信任边界不存在。
+
+修复
+
+将 authoritative issue() 改为 pub(crate)；
+
+wire 只接受 Candidate/Submission 类型；
+
+Runtime 产生 SealedContractEnvelopeV1，包含 issuer、sequence、proof dependencies 和签名；
+
+Store 只接受经过 Runtime seal 的 envelope；
+
+authoritative Contract 禁止直接 Deserialize，使用 StoredContractEnvelope 解封验证。
+
+P0-02：Intent Fast Path、Decision Necessity、Turn Coordination 仍消费调用者 facts
+
+证据
+
+InteractionAssessmentRequestV1 直接包含三个可反序列化 facts：
+
+idr-runtime/src/lib.rs:19-26
+
+Runtime 直接调用纯函数：
+
+idr-runtime/src/lib.rs:52-100
+
+一致性检查只比较有限逻辑矛盾：
+
+idr-runtime/src/lib.rs:103-120
+
+可复现方式
+
+调用者可把：
+
+deterministic_command_match=true
+required_parameters_complete=true
+ambiguity_present=false
+impact=low
+reversible=true
+
+作为事实提交，而无需提供命令匹配证据、Context Snapshot、Capability、Policy 或 Authority Proof。
+
+影响
+
+局部门禁算法正确，但事实来源不可证明。攻击者不是绕过函数，而是控制函数输入。
+
+修复
+
+建立：
+
+InputAdmissionProof
+ContextSnapshotProof
+IntentFastPathFactsProof
+DecisionNecessityFactsProof
+TurnCoordinationFactsProof
+
+Runtime 只消费 VerifiedProofV1 派生的 typed admission，不接受生产环境裸 facts。
+
+P0-03：Canonical Input 仍没有认证入口和防重放
+
+证据
+
+CanonicalInputEventV1 可反序列化且公开 new()：
+
+input.rs:41-90
+
+校验只覆盖结构、actor-role matrix、摘要格式、logical time：
+
+input.rs:92-118
+
+缺少 Gateway signature、session/channel binding、authentication context、nonce 和 replay index。
+
+可复现方式
+
+构造一个 shape 合法、source_actor="user"、允许语义角色、任意合法摘要格式的事件。代码无法证明该事件来自真实用户会话。
+
+影响
+
+后续“用户明确选择”“用户授权”“用户纠正”均可能建立在伪造输入上。
+
+修复
+
+Gateway 签发 InputAdmissionAttestationV1，绑定：session、channel、authenticated principal、tenant、event ID、content digest、nonce、received_at，并由 Store 全局消费 nonce。
+
+P0-04：Exact Action Authorization 仍可由普通调用者签发
+
+证据
+
+ExactActionAuthorizationV1 公开 Deserialize 和 issue()：
+
+action.rs:196-240
+
+validate_for() 检查精确 Action、参数、context digest 和时效，但没有 issuer signature、authentication proof 或在线撤销证明：
+
+action.rs:242-266
+
+可复现方式
+
+任意 Rust 调用者对目标 Action 调用 ExactActionAuthorizationV1::issue(..., Approve, ...) 即获得形式合法授权。
+
+影响
+
+Execution Permit 的签名 Proof 绑定的是“一个 authorization object”，但该 object 本身不一定由真正有权主体签发。安全链的上一环仍是自声明。
+
+修复
+
+Authorization 必须由已认证用户确认事件和 Authority Runtime 共同产生，并由受保护 issuer key 签名。Permit Proof 应引用 verified Authorization Proof，而不是仅引用普通 Authorization digest。
+
+P0-05：Action Admission 旧路径仍接受裸布尔事实
+
+证据
+
+ActionAdmissionFactsV1 包含 capability、authority、parameters、preconditions、policy、verification、compensation、dependency 等普通 bool：
+
+action.rs:294-307
+
+Admission 仅遍历这些 bool：
+
+action.rs:327-393
+
+Store 公开旧入口：
+
+idr-store/src/lib.rs:338-418
+
+可复现方式
+
+构造所有字段为 true 的 facts，加一个形式合法 Authorization，调用 claim_action_execution()。
+
+影响
+
+即使新的 Execution Permit Proof 路径存在，旧路径仍可以在没有 Capability/Authority/Policy Proof 的情况下获得 Admit。
+
+修复
+
+删除或私有化生产 claim_action_execution(action, facts, ...)；Action Admission 必须消费 typed verified proofs，并原子生成唯一 execution reservation/permit。
+
+P0-06：Permit 在 Store 消费时不复核“当前时间”，存在 TOCTOU
+
+证据
+
+verify_execution_permit_request() 在验证时检查 verified_at < lease_until：
+
+execution.rs:238-265
+
+VerifiedExecutionPermitRequestV1 保存原验证时间：
+
+execution.rs:268-288
+
+Store issue_execution_permit() 没有接收可信当前时间，也没有在锁内复核：
+
+now < lease_until
+action still valid
+authorization still valid
+proof still valid/key not revoked
+
+idr-store/src/lib.rs:273-335
+
+它只复核 Action current pointer 和 replay index。
+
+可复现方式
+
+在 t=99 验证一个 lease_until=100 的 Proof；
+
+保留 VerifiedExecutionPermitRequestV1；
+
+在 t=200 调用 issue_execution_permit()；
+
+Store 仍可返回 Permit。
+
+影响
+
+过期 Proof、Authorization、Action 或 lease 可以在验证后延迟消费。验证和授权消费不在同一可信时间事务中。
+
+修复
+
+Store 接收 TrustedClockV1，在持锁后读取 current time；
+
+锁内重新验证 Proof key/revocation、Authorization、Action 和 lease；
+
+Executor 再次验证 Permit 当前 lease；
+
+不允许调用者传入 valid_at 作为生产时间源。
+
+P0-07：同一 Action 可由两个不同 Authorization 获得两个 Permit；Permit 与旧 claim 也不互斥
+
+证据
+
+Permit replay 检查仅覆盖：
+
+相同 proof ID；
+
+相同 nonce；
+
+相同 authorization ID。
+
+idr-store/src/lib.rs:300-313
+
+没有检查：
+
+相同 action_ref；
+
+相同 (tenant, operation, idempotency_key)；
+
+已存在 execution claim；
+
+已存在 Permit reservation；
+
+已存在 Receipt。
+
+ExactActionAuthorizationV1::issue() 每次生成新 UUID：
+
+action.rs:213-239
+
+旧 claim 路径只查看 execution_claims 和 Receipt，不查看 consumed_execution_proofs：
+
+idr-store/src/lib.rs:338-418
+
+Permit 路径也不查看 execution_claims。
+
+可复现方式 A：两个 Permit
+
+为同一 Action 创建 Authorization A 和 B；
+
+分别创建两份 Permit Request 和两份有效 Proof；
+
+第一次消费 A 成功；
+
+第二次消费 B 也成功，因为 authorization ID、proof ID、nonce 均不同。
+
+可复现方式 B：Permit + claim
+
+对 Action 取得 Permit；
+
+在 Receipt 写入前，以全 true facts 调用 claim_action_execution()；
+
+claim 路径看不到 Permit consumption，仍可能 Admit。
+
+影响
+
+同一外部副作用可能被两个 Permit executor 和一个 legacy claim executor 并发执行。当前只实现 token-level replay protection，没有 action-level exactly-once。
+
+修复
+
+统一唯一键：
+
+(action_ref)
+OR (tenant, operation, idempotency_key)
+
+Permit issuance、claim、retry、Receipt 必须使用同一个 durable reservation record。删除并行旧通道。
+
+P0-08：Execution reservation 没有 lease/owner/status/recovery，且 Permit 消费后可能永久丢失
+
+证据
+
+旧 claim 只保存：authorization ID、action ref、tenant、operation、idempotency key、claimed_at：
+
+idr-store/src/lib.rs:109-118
+
+重复 claim 永久返回 ExecutionPending：
+
+idr-store/src/lib.rs:388-400
+
+Permit consumption record 只保存 proof ID、nonce、digest、action、authorization、consumed_at：
+
+idr-store/src/lib.rs:120-129
+
+Store 先持久化 consumed proof，随后仅以内存返回 Permit：
+
+idr-store/src/lib.rs:315-335
+
+没有持久化：permit status、owner、provider、attempt、lease、delivered_at、acknowledged_at、dispatch state。
+
+可复现方式
+
+场景 1：进程在 claim 持久化后、调用 Provider 前崩溃；重启后永久 Pending；
+
+场景 2：Store 持久化 proof consumption 后、Permit 返回调用者前崩溃；Authorization 已消耗，但执行器从未收到 Permit；
+
+场景 3：执行器收到 Permit后崩溃，系统没有 takeover/reconcile 语义。
+
+影响
+
+系统可能永久卡住，也可能无法判断“未执行、执行中、已提交 Provider、结果未知”之间的区别。
+
+修复
+
+建立单一状态机：
+
+Reserved → PermitIssued → Delivered → Dispatched
+→ ProviderAccepted → ReceiptPending → Completed
+→ Expired / Abandoned / Reconciliating / TakenOver
+
+记录 owner、lease、attempt、provider、dispatch nonce，并支持 renew、expiry、takeover、reconcile 和 compensation。
+
+P0-09：Execution Receipt 没有绑定 Permit、Authorization、dispatch 或 Provider signature；失败后也无法合法 retry
+
+证据
+
+Receipt 字段没有 permit ID、authorization ref、dispatch nonce、owner、lease 或 provider signature：
+
+execution.rs:290-310
+
+Receipt 仍公开 Deserialize 和 issue()：
+
+execution.rs:290-362
+
+Store 只检查 Action/context/idempotency/parameter digest、旧 claim 存在，并拒绝同 Action 第二个 Receipt：
+
+idr-store/src/lib.rs:873-894
+
+Store 不检查 consumed_execution_proofs，也不验证 provider 与 Permit provider 一致、attempt 一致或 receipt 在 lease 内生成。
+
+可复现方式
+
+通过旧 claim 取得 claim；
+
+任意 Rust 调用者创建形式合法 Receipt；
+
+Store 不需要 Permit 或 provider signature 即可持久化。
+
+另一个问题：第一次 Receipt 为 Failed/Rejected 后，同 Action 的第二个 Receipt 仍因 prior_records 被拒绝，无法表达下一次 attempt。
+
+影响
+
+系统不能证明真实执行器执行了被授权操作；也不能正确处理 retry、多 attempt 和结果未知。
+
+修复
+
+Receipt 必须绑定：
+
+permit_id
+authorization_id
+action_ref
+provider_ref
+owner_ref
+attempt
+dispatch_nonce
+provider_execution_ref
+started/completed time
+provider signature
+
+Store 按 (action, attempt) 存储多个 Receipt，并由 Orchestrator 决定是否允许下一 attempt。
+
+P0-10：Response Admission 仍可由调用者伪造并重放
+
+证据
+
+内容字节绑定已正确加强：
+
+response.rs:199-257
+
+但是 ResponsePolicyFactsV1 仍是可反序列化的普通 refs、时间和 bool：
+
+response.rs:272-286
+
+Admission 是纯函数，并接受调用者提供的 valid_at：
+
+response.rs:304-373
+
+没有 Policy Engine signature、可信时钟、send permit、single-use consumption 或 Delivery Receipt。
+
+可复现方式
+
+调用者构造与 Response/content digest 匹配、所有 bool=true、时间窗口自洽的 facts，并传入落在窗口内的 valid_at，即可获得 Allow。
+
+影响
+
+内容完整性已建立，但“政策确实批准”“当前确实在有效期”“该 Allow 只使用一次”仍不可证明。
+
+修复
+
+Policy Engine 签发 VerifiedResponseAdmissionProofV1；Store/Send Façade 原子消费 proof ID，使用可信 clock，并记录 Delivery Receipt。
+
+P0-11：Human Model Gate 仍可绕过或复用于无关 Assertion
+
+证据
+
+HumanModelAssertionV1 仍派生 Deserialize：
+
+human_model.rs:147-174
+
+issue() 虽要求一个不可直接构造的 Gate Decision，但 Assertion 本身不保存 Gate ref、Candidate ref、用户确认事件或 Outcome ref：
+
+human_model.rs:178-235
+
+Gate facts 是裸 bool 和计数：
+
+human_model.rs:330-340
+
+Gate evaluator 没有 candidate、subject、predicate、value 或 evidence 绑定：
+
+human_model.rs:398-454
+
+Store 对 Human Model 跨对象一致性为空操作：
+
+idr-store/src/lib.rs:948
+
+可复现方式
+
+通过 JSON 构造 epistemic_status=user_confirmed 或 outcome_supported 的合法 Assertion；
+
+或获得一次 Gate Decision 后，用它签发多个内容不同的 Assertion；
+
+或在 facts 中直接声明 explicit_user_confirmation=true。
+
+影响
+
+长期用户模型可被错误或恶意污染，并反向影响后续 Intent/Decision。
+
+修复
+
+实现独立：
+
+HumanModelUpdateCandidateV1
+HumanModelPromotionProofV1
+HumanModelAssertionV1
+
+Promotion Proof 必须绑定 candidate digest、subject、predicate、value、scope、evidence，以及具体用户输入或 Outcome Observation Proof。Store 必须重放验证整条链。
+
+P0-12：Outcome Record 仍没有真实 Observation Attestation
+
+证据
+
+Outcome 可反序列化并公开 issue()：
+
+outcome.rs:29-87
+
+校验主要是结构、引用、状态和 attribution 关系：
+
+outcome.rs:107-180
+
+Store 能确认 Outcome 引用的 Action/Receipt 一致，但不能证明 observed_results 来自真实观察：
+
+idr-store/src/lib.rs:896-947
+
+可复现方式
+
+在已有 Action/Receipt 后创建一个结构合法但业务事实虚假的 Observed Outcome，并附任意格式合法 evidence ref。
+
+影响
+
+错误 Outcome 可以进入审计和 Human Model 学习链，形成虚假成功、错误归因或长期偏好污染。
+
+修复
+
+实现 Provider/Observer 签名的 OutcomeObservationAttestationV1，绑定 receipt、观察窗口、数据摘要、observer、evidence、success criteria evaluation 和 attribution review。
+
+P0-13：Orchestration Runtime 仍只是数据模型与 Repository trait
+
+证据
+
+当前有 Step、Wait、Retry、Command 和 CAS repository 接口，这是正确基础；但：
+
+OrchestrationRunRecordV1 只是公开数据：orchestrator.rs:229-236
+
+OrchestrationRepositoryV1 只有 load_run / compare_and_append trait：orchestrator.rs:248-265
+
+没有生产 repository 实现、scheduler、event loop、command handler、lease recovery 或 provider reconciliation loop。
+
+Runtime 主体仍是一次性的 Assessment Kernel：
+
+idr-runtime/src/lib.rs:48-100
+
+影响
+
+原始设计中“中断、恢复、取消、等待、重试、失效传播、执行结果未知处理”的控制平面尚未存在。当前无法保证 Gate 和 Contract 在整个 run 生命周期中被强制执行。
+
+修复
+
+实现 durable Orchestrator aggregate、event log、scheduler、worker leases、command processing、retry/recovery/reconciliation，并使所有 Contract/Permit/Receipt 只能由 Orchestrator step transition 产生。
+
+P0-14：Store anti-rollback 仍只依赖同一主机上的 snapshot + anchor
+
+证据
+
+Store 文件顶部明确说明它不是外部不可变 ledger。持久化使用完整 JSON snapshot、rename、fsync，再 append 本地 anchor：
+
+idr-store/src/lib.rs:1-7
+
+idr-store/src/lib.rs:953-975
+
+加载时比较本地 snapshot 与本地 anchor：
+
+idr-store/src/lib.rs:977-1026
+
+如果攻击者同时回滚或替换 snapshot 和 anchor，二者仍能自洽。
+
+影响
+
+具备本地文件系统控制权的攻击者可以恢复旧 Authorization/Contract/current pointer/replay index。局部损坏和单文件回滚可检测，但强对手 rollback 不可检测。
+
+修复
+
+把每个 snapshot root/sequence 提交到外部 WORM、透明日志、远端 KMS monotonic counter 或独立审计服务；生产加载必须验证外部 checkpoint。
+
+九、P1 问题
+
+P1-01：Proof Trust Root 和可信时间尚未形成受保护生产组合
+
+ProofTrustRootV1 可由普通调用者传入 policies 构造，verify_now() 使用系统墙钟：trust.rs:314-405。需要受保护配置、key rotation、在线 revocation distribution 和 injectable trusted/monotonic clock。
+
+P1-02：持久化的 proof consumption 不足以做完整审计重验
+
+ConsumedExecutionProofRecordV1 只保存 proof ID、nonce、subject digest、Action、Authorization、时间：store/src/lib.rs:120-129。没有保存 signed envelope、issuer、key ID、完整 request、provider、owner、attempt 和 lease。重放只能检查格式和索引，不能重新验签并解释执行资格。
+
+P1-03：Decision selected option 与 Action effect 没有语义绑定
+
+Store 检查 authority boundary、required authority 和 prohibited automatic operation：store/src/lib.rs:841-870，但没有证明 Action operation/parameters 是 selected option 的合法编译结果。需要 DecisionEffectBindingV1。
+
+P1-04：Human Model effective_value() 没有处理 lifecycle status
+
+human_model.rs:323-327 仅在 correction state 为 Corrected 时切换值；即使 Assertion 为 Rejected、Expired 或 Superseded，也仍返回值。消费 API 应先验证 active/current/usage policy。
+
+P1-05：Lineage 被强制固定在同一 run/turn，可能阻止合法跨 turn 修订
+
+Store successor continuity 现在要求 run、turn 和 authority context 全部不变。它关闭了跨上下文攻击，但原始长期 Contract 可能需要在新的用户 turn 产生 successor。应区分 immutable lineage identity 与合法 transition context，并用 transition proof 明确跨 turn 修订，而非简单永久禁止。
+
+P1-06：Contract 和参数摘要仍没有语言中立 canonical encoding
+
+contract_digest() 仍依赖 Rust serde_json 序列化。Proof claims 有自定义 canonical bytes，但 Contract、Action parameters、Execution result 的 Rust/TS/Python 一致字节规范尚未冻结。需要 RFC 8785/JCS 或严格定义的 IDR Canonical Encoding V1。
+
+P1-07：Store 仍是 whole-snapshot backend，没有 WAL、transactional outbox 和多节点一致性
+
+persist_snapshot() 每次重写完整 snapshot：store/src/lib.rs:953-975。当前适合 Foundation/单节点验证，不适合高并发生产。需要 append-only WAL、checkpoint、outbox、crash injection 和多节点 consensus/leader fencing。
+
+P1-08：Response、Outcome 和 Human Model 的状态语义仍不够强
+
+例如 PartiallyObserved、Conflicted、Outcome attribution、Human Model source type 与 epistemic status 之间缺少严格 evidence cardinality 和状态约束。结构合法不等于语义可审计。
+
+P1-09：跨语言协议仍由三份手写实现维护
+
+Round 4 已对齐 UUID、safe integer、unknown fields 和 actor-role matrix，但没有单一 schema 生成、canonical signature vectors 和版本兼容矩阵。后续字段增长会继续产生 drift 风险。
+
+P1-10：关键攻击与并发测试仍缺失
+
+现有新增测试覆盖同 proof/nonce/auth replay、Deny、过期租期、字段绑定和跨 Kind invalidation，但没有覆盖：
+
+两个 Authorization 对同一 Action 签发两份 Permit；
+
+Permit 与 legacy claim 双通道并发；
+
+proof 验证后延迟到过期再消费；
+
+proof consumption 后进程崩溃；
+
+claim lease/takeover；
+
+Permit/Receipt provider/attempt/nonce mismatch；
+
+failed Receipt 后 retry；
+
+Human Model wire promotion 与 Gate reuse；
+
+Outcome 伪造；
+
+snapshot+anchor 同时回滚；
+
+Orchestrator crash/restart/CAS race。
+
+十、P2 问题
+
+P2-01：版本协商和迁移机制仍不足
+
+Schema/rule version 主要是常量，没有 minimum reader、migration contract、deprecation window 和 mixed-version replay policy。
+
+P2-02：资源预算尚未覆盖全协议
+
+关键 JSON payload 已增加 1 MiB、32 层和 node 上限，集合也增加部分限制，但 Proof、Orchestration event、audit log、字符串组合和全局 run budget 尚未统一。
+
+P2-03：Orchestration Run Record 信息不足
+
+OrchestrationRunRecordV1 只有 run ID、state、cancel flag、last sequence：orchestrator.rs:229-236。缺少 tenant/subject、created/updated time、root intent、current step、failure cause、wait reason、policy revision、lease/owner 和 terminal outputs。
+
+P2-04：ActThenRespond 在当前 Runtime 选择逻辑中接近死模式
+
+Runtime 强制 response_planned=true，selector 在计划 Response 时通常选择 RespondThenAct，使 ActThenRespond 虽存在于协议但难由当前 assessment 产生。应明确它是保留模式还是删除。
+
+P2-05：校验清单没有外部签名
+
+SHA256SUMS 可验证打包内部一致性，但清单本身没有独立发布签名或透明日志证明，不能证明包来自预期发布者。
+
+十一、可复现攻击路径摘要
+
+11.1 双 Authorization 双 Permit
+
+Action A
+ ├─ Authorization A1 (Approve, new UUID)
+ │   └─ Proof P1 → Permit 1
+ └─ Authorization A2 (Approve, another UUID)
+     └─ Proof P2 → Permit 2
+
+当前 Store 的 replay 索引只拒绝相同 proof/nonce/authorization ID，因此 P1 和 P2 都能成功。
+
+11.2 Permit 与 legacy claim 双通道
+
+Action A → issue_execution_permit() → Permit
+Action A → claim_action_execution(all facts=true) → Admit
+
+两个索引互不检查，Receipt 写入前可同时成立。
+
+11.3 过期后消费
+
+verify proof at t=99, lease_until=100
+hold VerifiedExecutionPermitRequest
+issue_execution_permit at t=200
+
+Store 没有 current clock 参数或锁内时效重验。
+
+11.4 Permit 丢失
+
+persist consumed proof/auth
+process crashes before returning Permit
+
+重启后 Authorization 已被消费，但没有持久 permit delivery/recovery 状态。
+
+11.5 Human Model 直接晋级
+
+Deserialize HumanModelAssertionV1 with epistemic_status=user_confirmed
+or
+reuse one gate decision for unrelated assertions
+
+Assertion 不保存 Gate/Candidate/evidence proof binding，Store 也未复核。
+
+十二、推荐修复方案与实施顺序
+
+阶段 1：统一执行资格，立即删除双通道
+
+将 claim_action_execution() 改为内部 migration-only，生产不可调用；
+
+引入唯一 ExecutionReservationV1；
+
+唯一键同时覆盖 Action ref 和 tenant/operation/idempotency；
+
+Permit issuance、claim、Receipt 和 retry 全部操作同一 reservation aggregate；
+
+增加双 Authorization、Permit+claim 的并发攻击测试。
+
+这是 Round 5 的最高优先级。
+
+阶段 2：修复 Permit TOCTOU 和崩溃恢复
+
+Store 内注入可信 clock；
+
+持锁后重新验证 Action、Authorization、Proof、lease、revocation；
+
+持久化 Permit request、issuer/key、provider、owner、attempt、lease 和状态；
+
+实现 delivered/ack/dispatched/reconcile/expired/takeover；
+
+授权不能在未确认 Permit delivery 前不可恢复地烧毁。
+
+阶段 3：Receipt 强绑定 Permit
+
+Receipt 必须消费 Permit；
+
+Provider 对 Receipt 签名；
+
+Store 验证 permit/provider/owner/attempt/nonce/lease；
+
+按 attempt 保存多 Receipt；
+
+由 Orchestrator 根据失败类型决定 retry、compensation 或人工介入。
+
+阶段 4：封闭 Rust authoritative issuance
+
+所有 Contract authoritative constructor 改为 crate-private；
+
+Candidate 与 Stored Contract 分离；
+
+Runtime 签发 sealed envelope；
+
+Store 只接受 sealed envelope；
+
+删除 authoritative object 的直接 wire deserialize。
+
+阶段 5：把所有 Gate 改为 Proof-carrying Admission
+
+依次接入：
+
+Input Admission
+→ Context Snapshot
+→ Intent Fast Path / Decision Necessity
+→ Turn Coordination
+→ Response Admission
+→ Action Admission
+→ Outcome Observation
+→ Human Model Promotion
+
+生产路径不得再接受裸布尔 facts。
+
+阶段 6：完成真正 Orchestration Runtime
+
+实现 durable repository、event loop、scheduler、worker lease、CAS transition、cancel/invalidate、provider reconciliation 和 crash recovery，使所有运行状态变化只能经过 Orchestrator。
+
+阶段 7：Durability、审计与跨语言标准
+
+append-only WAL + checkpoint；
+
+transactional outbox；
+
+external WORM/transparent-log anchor；
+
+canonical encoding；
+
+Rust/TS/Python byte-for-byte golden vectors；
+
+fault injection、power-loss、multi-process 和 multi-node tests。
+
+阶段 8：Aegis 生产适配
+
+Aegis 只提交 Candidate/Input 和消费 IDR 输出；权限只能收窄，不能扩大。Adapter 不能直接创建 authoritative Contract、Authorization、Receipt、Outcome 或 Human Model Assertion。
+
+十三、发布门槛
+
+解除 BLOCKED 前至少必须满足：
+
+Authoritative contracts sealed issuance = PASS
+Authenticated ingress and replay prevention = PASS
+All production admissions proof-only = PASS
+Single execution reservation path = PASS
+Action-level exactly-once = PASS
+Permit TOCTOU tests = PASS
+Crash recovery / lease takeover = PASS
+Provider-signed receipt bound to permit = PASS
+Outcome observation proof = PASS
+Human model promotion proof chain = PASS
+Durable orchestrator = PASS
+External anti-rollback checkpoint = PASS
+Cross-language canonical vectors = PASS
+P0 = 0
+
+十四、最终判断
+
+Round 4 已经把 ExecutionPermitV1 从“字段未充分绑定的危险凭证”提升为“局部密码学绑定较完整的凭证请求”。这是明确进展。
+
+但生产安全不能只看一张 Permit 的结构。当前真正的问题是：
+
+Authorization 仍可自签
+Guard facts 仍可自报
+Permit 与旧 claim 并存
+同 Action 可获多 Permit
+Permit 消费存在时间竞态
+Permit/claim 无恢复状态机
+Receipt 不证明由 Permit 执行
+Outcome/Human Model 不证明真实证据
+Orchestrator 尚未运行
+
+因此，Round 4 仍不能被认定为 The Human-Centered Intent & Decision Runtime V1.3 的生产信任根。它可以继续作为协议基础、单节点验证内核和 Aegis shadow-mode 宿主，但不得授予真实生产权限、执行不可逆外部行为或写入长期 Human Model。

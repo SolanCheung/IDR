@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idr-evaluation"
+version = "0.1.0"
+description = "Offline evaluation layer for The Human-Centered Intent & Decision Runtime"
+requires-python = ">=3.9"
+
+[tool.setuptools.packages.find]
+where = ["src"]

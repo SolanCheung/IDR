@@ -1,0 +1,11 @@
+[package]
+name = "idr-production-migrator"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+idr-store = { path = "../../crates/idr-store", default-features = false, features = ["migration"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

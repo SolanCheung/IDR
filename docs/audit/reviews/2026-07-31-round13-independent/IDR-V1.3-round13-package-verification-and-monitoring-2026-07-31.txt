@@ -1,0 +1,484 @@
+IDR V1.3 Round 13 包核验与 2026-07-31 意图决策层监测评估
+
+评估日期： 2026-07-31评估对象：
+
+IDR-V1.3-trust-chain-closure-round13-2026-07-30(2).zip
+
+配套 SHA-256 文件
+
+SARC-DQ（arXiv:2607.26313）
+
+Setoka（arXiv:2607.27056）
+
+Graph-Native Bitemporal Memory（arXiv:2607.26520）
+
+AG-UI 与 A2UI 当前公开状态
+
+1. 最终结论
+
+本轮监测报告的核心方向成立，三项研究均真实且对 IDR 有实质价值，但需要作以下架构纠正：
+
+Evidence Quality Gate 必须加入 IDR，但不能仅作为 Context Fabric 与 Intent Resolution 之间的一次性门禁。
+
+**质量裁决不能写回 Canonical Fact 本体。**事实版本应保持不可变；质量裁决是依赖规则版本、评估时间、用途和权限上下文的派生对象。
+
+Admitted Evidence Snapshot 必须成为 Intent、Decision 与 Action 之间的共同绑定对象。
+
+**行动执行前必须重新验证 Snapshot 的有效性。**事实可能在决策完成后、执行发生前过期或被替代。
+
+**Human Model 的双时间与检索顺序应进入规范冻结，但当前 Round 13 代码并不存在“向量 Top-K 后过滤”的已实现缺陷。**这是一项必须提前禁止的未来实现模式，而不是现有运行时回归。
+
+Setoka 应进入评测层；宽泛 Personality Trait 不应进入持久 Human Model 或高影响决策。
+
+**Round 14 不应混入以上架构增量。**Round 14 应只关闭 Round 13 审计包可复现性及既有 Trust Chain 阻塞项；上述进展应进入单独的 IDR V1.4 Architecture Delta。
+
+总体状态：
+
+外部研究吸收决定：ACCEPT WITH ARCHITECTURAL CORRECTIONS
+Round 13 源码整改判断：未发现新的同级运行时安全缺陷
+Round 13 审计包可独立重放：FAIL
+生产状态：PRODUCTION TRUST ROOT = BLOCKED
+
+2. 三项外部进展的严格判断
+
+2.1 SARC-DQ：结论成立，但需要从“单点门禁”升级为“证据资格生命周期”
+
+SARC-DQ 证实：payload 格式正确并不意味着证据可用于行动；freshness、lineage、provenance、supersession 等元数据缺陷可能在模型完全不可见的情况下转化为错误行动。其论文报告约 60% 的错误行动转换率，并显示更昂贵模型未消除此类风险；元数据感知的确定性 pre-action gate 只能修复已有谓词覆盖的缺陷。
+
+这直接支持 IDR 新增证据质量治理，但论文直接验证的是 pre-action gate。把治理前移到 Intent / Decision 之前，是符合 IDR 信任链目标的架构推论，而不是论文已经证明的唯一放置方式。
+
+正确的 IDR 链路
+
+Source Systems
+→ Source Record Envelope
+→ Canonical Fact Version
+→ Evidence Qualification Runtime
+→ Evidence Qualification Decision
+→ Admitted Evidence Snapshot
+→ Context Snapshot
+→ Intent Resolution
+→ Decision Collaboration
+→ Decision Contract
+→ Action Admission（重新验证 Snapshot currentness）
+→ Dispatch
+
+为什么不能只放一个 Gate
+
+Intent Resolution 可能已经被过期事实污染。
+
+Decision Collaboration 可能已经据此形成错误建议。
+
+决策到行动之间存在时间差，原先合格的事实可能已经过期或被替代。
+
+不同用途、风险等级、租户策略对同一事实可能产生不同质量结论。
+
+因此，需要三个约束点：
+
+1. Qualification：事实版本取得特定用途下的进入资格
+2. Snapshot Binding：决策绑定精确事实版本与资格裁决
+3. Execution Revalidation：执行前确认资格与事实版本仍然有效
+
+必须纠正的 Schema 归属
+
+以下内容属于不可变的 CanonicalFactVersionV1：
+
+fact_identity
+fact_version
+source_system_ref
+source_record_ref
+source_record_version
+valid_from
+valid_until
+recorded_at
+superseded_at
+supersedes_ref
+superseded_by_ref
+lineage_ref
+provenance_ref
+source_declared_expiry
+integrity_digest
+
+以下内容不应写入 Canonical Fact，而应进入独立的 EvidenceQualificationDecisionV1：
+
+qualification_id
+fact_version_ref
+purpose_ref
+scope_ref
+policy_ref
+ruleset_ref
+ruleset_revision
+evaluated_at
+qualification_valid_until
+predicate_results
+effective_authority_level
+admission_outcome
+required_remediations
+reason_codes
+evaluator_ref
+decision_digest
+
+原因：quality_decision、quality_predicates、实际 freshness deadline 和 effective authority 都可能随着规则版本、用途、当前时间和权限上下文变化。把它们写入不可变事实会混淆“事实是什么”与“当前规则是否允许使用该事实”。
+
+裁决值也应拆分
+
+原建议：
+
+ADMIT
+ADMIT_WITH_WARNING
+REQUIRE_REFRESH
+REQUIRE_CORROBORATION
+BLOCK
+
+混合了“裁决结果”和“补救动作”。建议改为：
+
+admission_outcome:
+  ADMIT
+  ADMIT_WITH_WARNING
+  DENY
+
+required_remediation:
+  NONE
+  REFRESH
+  CORROBORATE
+  SOURCE_REPAIR
+  HUMAN_REVIEW
+
+这样可以表达：
+
+DENY + REFRESH
+DENY + CORROBORATE
+ADMIT_WITH_WARNING + HUMAN_REVIEW
+
+而不会把状态机和工作流动作耦合在一个枚举里。
+
+Admitted Evidence Snapshot
+
+snapshot_id
+scope_ref
+purpose_ref
+created_at
+snapshot_valid_until
+admitted_fact_version_refs
+qualification_decision_refs
+warning_refs
+excluded_evidence_refs
+snapshot_hash
+
+DecisionContractV1 应绑定：
+
+evidence_snapshot_ref
+evidence_snapshot_hash
+evidence_quality_summary
+
+被拒绝、过期、待刷新证据的完整明细应主要保存在 Snapshot 与 Qualification Decision 中，Decision Contract 只保留治理摘要和精确引用，避免重复状态产生漂移。
+
+严格语义
+
+Evidence Qualification 只能保证：
+
+在声明的用途、规则版本、时点和权限上下文下，该事实版本具备进入计算的资格。
+
+它不能保证事实绝对真实，也不能替代语义正确性、业务判断或因果验证。
+
+2.2 Setoka：适合作为 Human Model 分层评测，不适合作为人格持久化依据
+
+Setoka 的四层结构与 IDR Human Model 的设计方向高度相关：
+
+L1 Semantic Memory
+L2 Episodic Memory
+L3 Behavior Pattern
+L4 Personality Trait
+
+IDR 的受治理映射应冻结为：
+
+L1 → 明确事实、目标、约束、交互偏好
+L2 → 决策历史、结果历史、具体事件重建
+L3 → 有限范围、跨时间、可纠正的行为模式
+L4 → 研究项；默认禁止持久化和高影响使用
+
+L3 行为模式写入要求
+
+一个行为模式至少应满足：
+
+明确限定 tenant / domain / task / interaction scope；
+
+存在多个独立时点或多个独立来源的支持证据；
+
+保存反证与适用边界；
+
+有失效时间、衰减规则和用户纠正路径；
+
+不从任务偏好跃迁为宽泛人格标签；
+
+不直接用于就业、信贷、医疗、保险、执法等高影响裁决。
+
+建议评测指标
+
+cross_source_evidence_coverage
+abstraction_correctness
+scope_precision
+contradiction_detection
+temporal_consistency
+user_correction_recovery
+unsupported_generalization_rate
+evidence_sufficiency
+scope_leakage_rate
+stale_pattern_retention_rate
+
+其中 unsupported_generalization_rate 与 scope_leakage_rate 应作为阻断性指标，而不仅是普通质量分数。
+
+2.3 Graph-Native Bitemporal Memory：应冻结检索规则，但需区分“现有缺陷”与“未来约束”
+
+该方案验证了：
+
+Immutable Identity Node
+→ Versioned Content Nodes
+→ Valid Time + Transaction Time
+
+并暴露出：先进行全局语义 Top-K，再执行时间过滤，会造成不符合时间条件的结果占用候选名额，降低时态问题召回率。
+
+IDR 应冻结的查询模式
+
+CURRENT
+AS_OF(timestamp)
+FULL_HISTORY
+TRANSITIONS
+
+强制检索不变量
+
+tenant
+subject/user
+domain
+task scope
+purpose/policy
+time interval
+
+必须在 ANN / Vector Top-K 候选生成前生效，或参与联合候选生成；禁止仅在 Top-K 后作为普通过滤器。
+
+允许的实现方式：
+
+A. Filtered ANN
+B. Temporal Index + Semantic Index 联合求交
+C. Graph traversal + temporal predicate + vector reranking
+D. 先由关系/时间索引生成合法候选，再在合法集合内语义排序
+
+禁止：
+
+global semantic Top-K
+→ post-filter tenant/time/scope
+→ 结果不足时直接返回
+
+对 Round 13 当前实现的准确判断
+
+Round 13 当前 Human Model SQL 查询已经在数据库查询阶段应用：tenant、subject、scope、purpose、policy revision、impact、lifecycle、expiry、trust domain 和 invalidation 条件，并且只读取 current pointer 指向的版本。
+
+当前包中未发现已实现的 Human Model 向量检索路径，因此论文暴露的问题不是 Round 13 的现存回归，而是未来加入向量检索时必须预先冻结的禁止模式。
+
+当前 HumanModelAssertionV1 已有 scope、persistence scope、epistemic/lifecycle status、来源与支持/反证、纠正状态、观测时间、过期和使用策略；但尚未形成完整显式的双时间版本语义与四种查询模式。
+
+3. AG-UI / A2UI 边界判断
+
+边界无需修改：
+
+IDR
+  意图、证据资格、决策、协调、行动、Human Model 与治理
+
+AG-UI
+  Agent 与应用之间的运行时事件和交互流
+
+A2UI
+  声明式 UI 意图、结构与客户端原生组件映射
+
+MCP Apps
+  自包含交互应用
+
+但监测报告中的 A2UI 版本描述需要更新：
+
+A2UI 当前 production release：v0.9.1
+v1.0 specification：Release Candidate
+整体状态：Early-stage public preview
+
+AG-UI 2026-07-28 最新发布公开列出的包为 ag-ui-crewai 0.2.1，未显示协议核心结构更新。因此本轮没有改变 IDR 与 AG-UI 的边界。
+
+4. Round 13 审计包核验
+
+4.1 完整性
+
+外层 ZIP 计算得到：
+
+20336a7cfa24f39c7a005091f9679d7678717fb456070b609374eb946e8f1b4f
+
+与上传的 .sha256 完全一致。
+
+包内：
+
+SHA256SUMS：917 项，全部校验通过
+Secret / hygiene scan：PASS，命中 0
+Python tests：9 / 9 PASS
+TypeScript tests：12 / 12 PASS
+TypeScript typecheck：PASS
+
+Rust 工具链在本次沙箱中不可用，因此本次未能独立重跑 Cargo、Clippy、Rustfmt 与 PostgreSQL Rust 攻击测试。这是评估环境限制，不应记为代码测试失败，但也不能把包内既有日志等同于本次独立重跑。
+
+4.2 新发现：审计包无法按附带脚本独立重放
+
+包内实际目录：
+
+Aegis-Life
+
+但：
+
+IDR/tools/run_round13_validation.sh
+
+第 5 行固定寻找：
+
+${idr_root}/../Aegis Life
+
+因此从解压后的审计包直接运行会在任何测试执行前退出。
+
+构建脚本自身也存在命名不一致：
+
+读取源目录：Aegis Life
+打包目标目录：Aegis-Life
+验证脚本仍读取：Aegis Life
+
+定级
+
+安全漏洞：否
+运行时 Trust Chain 新 P0：否
+审计证据可复现性：P0-AUDIT-REPRO
+Round 13 包独立重放状态：FAIL
+
+这不会自动推翻 Round 13 源码修复，但会阻止把当前 ZIP 声明为“可由独立审计者按包内脚本完整复现”。
+
+最小修复
+
+所有 build / validation 脚本应统一通过一个 resolver：
+
+resolve_aegis_root() {
+  if [[ -n "${IDR_AEGIS_ROOT:-}" && -d "${IDR_AEGIS_ROOT}" ]]; then
+    cd "${IDR_AEGIS_ROOT}" && pwd
+    return
+  fi
+
+  for candidate in \
+    "${idr_root}/../Aegis-Life" \
+    "${idr_root}/../Aegis Life"
+  do
+    if [[ -d "${candidate}" ]]; then
+      cd "${candidate}" && pwd
+      return
+    fi
+  done
+
+  printf 'Aegis root not found\n' >&2
+  return 1
+}
+
+aegis_root="$(resolve_aegis_root)"
+
+同时新增一个“从最终 ZIP 解压后运行验证入口”的 CI 测试，而不是只在源工作区运行脚本。
+
+5. 正确的后续分轨
+
+Track A：Round 14 — Trust Chain / Audit Reproducibility Closure
+
+Round 14 只做：
+
+P0-AUDIT-REPRO
+- 修复 Aegis 路径解析
+- 统一构建包目录名与验证脚本
+- 从最终 ZIP 解压后执行完整验证
+- 重新生成 SHA256SUMS、FILE-INVENTORY 与外层 SHA
+- 在具备 Rust/PostgreSQL 工具链的独立环境重跑全部门禁
+- 继续保持 PRODUCTION TRUST ROOT = BLOCKED，直到既有解除条件全部满足
+
+不要在 Round 14 中加入 Evidence Quality、Bitemporal Query 或 Setoka 代码，否则会重新扩大已经收敛的 V1.3 审计范围。
+
+Track B：IDR V1.4 — Evidence Qualification & Governed Human Model Delta
+
+建议按以下顺序：
+
+V1.4-P0-SPEC-1
+EvidenceQualificationDecisionV1
+
+V1.4-P0-SPEC-2
+AdmittedEvidenceSnapshotV1
+
+V1.4-P0-SPEC-3
+Decision Contract evidence binding
+
+V1.4-P0-SPEC-4
+Action Admission / Dispatch snapshot revalidation
+
+V1.4-P0-SPEC-5
+Human Model bitemporal identity/version/query contract
+
+V1.4-P0-GOV-1
+Personality inference persistence and high-impact prohibition
+
+V1.4-P1-EVAL-1
+Setoka adapter and governed evaluation metrics
+
+V1.4-P1-IMPL-1
+Filtered ANN / joint temporal-semantic retrieval implementation
+
+6. 验收门禁
+
+Evidence Qualification
+
+不合格事实不能进入 Admitted Evidence Snapshot；
+
+同一事实可因 purpose / ruleset / time 不同得到不同 Qualification Decision；
+
+Canonical Fact 不被质量门禁回写修改；
+
+Decision Contract 精确绑定 Snapshot hash；
+
+事实被 supersede 或资格过期后，行动执行必须 fail closed；
+
+LLM 只能解释质量缺陷，不能绕过 Rust 确定性谓词裁决。
+
+Human Model
+
+AS_OF(t) 结果能恢复当时系统已知且现实有效的版本；
+
+CURRENT 与 AS_OF 不混淆 valid time 和 transaction time；
+
+tenant / user / scope / time 在向量候选生成前生效；
+
+用户纠正后旧版本保留审计历史，但不继续作为当前有效值；
+
+宽泛人格推断不会进入持久模型或高影响决策；
+
+L3 行为模式必须具有跨时间证据、严格 scope 和可失效语义。
+
+Audit Package
+
+最终 ZIP 在空目录解压后可运行唯一验证入口；
+
+验证脚本不得依赖打包目录外的隐式 sibling 路径；
+
+外部依赖必须显式声明、可覆盖并 fail closed；
+
+生成包后再执行完整验证，不能只验证打包前工作区。
+
+7. 最终裁决
+
+本轮监测的核心判断正确：IDR 不能只验证来源与行动授权，还必须治理“证据版本在当前用途与时点是否具备进入决策链的资格”。
+
+但正式落地时必须采用：
+
+Immutable Fact Version
++
+Versioned Qualification Decision
++
+Admitted Evidence Snapshot
++
+Decision Binding
++
+Execution-Time Revalidation
+
+而不是简单地把 quality_decision 等派生状态塞入 Canonical Fact，或只在 Intent Resolution 前设置一次门禁。
+
+Round 13 包的源码完整性与已能独立运行的 Python/TypeScript 检查表现良好，但当前打包目录与验证脚本路径不一致，导致“按包重放”失败。下一轮应首先关闭这一审计可复现性问题，同时把三项外部研究作为 IDR V1.4 的受控架构增量单独推进。

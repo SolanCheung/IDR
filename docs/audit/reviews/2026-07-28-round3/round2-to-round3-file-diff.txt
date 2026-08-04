@@ -1,0 +1,29 @@
+Only in /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR: .gitignore
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/Cargo.lock and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/Cargo.lock differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/Cargo.toml and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/Cargo.toml differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/README.md and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/README.md differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/Cargo.toml and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/Cargo.toml differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/action.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/action.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/common.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/common.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/execution.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/execution.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/guards.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/guards.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/human_model.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/human_model.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/input.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/input.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/src/human_centered/mod.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered/mod.rs differ
+Only in /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/src/human_centered: trust.rs
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-protocol/tests/idr_protocol_v1.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-protocol/tests/idr_protocol_v1.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-runtime/Cargo.toml and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-runtime/Cargo.toml differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-runtime/src/lib.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-runtime/src/lib.rs differ
+Only in /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-runtime/src: orchestrator.rs
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-runtime/tests/supplier_vertical_slice.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-runtime/tests/supplier_vertical_slice.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-store/src/lib.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-store/src/lib.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/crates/idr-store/tests/idr_store_v1.rs and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/crates/idr-store/tests/idr_store_v1.rs differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/docs/architecture/idr-v1-implementation.md and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/docs/architecture/idr-v1-implementation.md differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/docs/audit/IDR_V1_3_AUDIT_MANIFEST.md and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/docs/audit/IDR_V1_3_AUDIT_MANIFEST.md differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/docs/audit/IDR_V1_3_REMEDIATION.md and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/docs/audit/IDR_V1_3_REMEDIATION.md differ
+Only in /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/docs/audit/reviews: 2026-07-28-reaudit
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/integrations/aegis-life/README.md and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/integrations/aegis-life/README.md differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/packages/interaction-client/src/index.ts and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/packages/interaction-client/src/index.ts differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/packages/interaction-client/tests/contracts.test.ts and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/packages/interaction-client/tests/contracts.test.ts differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/research/evaluation/src/idr_eval/contracts.py and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/research/evaluation/src/idr_eval/contracts.py differ
+Files /mnt/data/idr-v13-round2/IDR-V1.3-reaudit-2026-07-28/IDR/research/evaluation/tests/test_evaluator.py and /mnt/data/idr-v13-round3/IDR-V1.3-reaudit-round3-2026-07-28/IDR/research/evaluation/tests/test_evaluator.py differ

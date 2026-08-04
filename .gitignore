@@ -1,0 +1,40 @@
+# Rust build output (workspace and nested compile-check tools)
+**/target/
+
+# JavaScript / TypeScript
+**/node_modules/
+**/.npm/
+**/coverage/
+**/dist/
+
+# Python
+**/__pycache__/
+*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Audit archives are release artifacts, not repository source
+audit-bundle/
+*.zip
+*.zip.sha256
+
+# Editors and operating systems
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
