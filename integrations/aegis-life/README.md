@@ -77,3 +77,9 @@ gate are defined in
 conformance artifacts under
 `contracts/integrations/aegis-life/producer-trust-admission/v1/`. All producer
 states remain `NOT_IMPLEMENTED`; this is not implementation or admission.
+
+The upstream receipt-owner and source semantics are defined in
+`docs/integrations/IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`, with synthetic
+conformance artifacts under
+`contracts/integrations/aegis-life/ingress-receipt-trust/v1/`. It does not
+implement the ingress owner, monotonic clock, or receipt-source binding.

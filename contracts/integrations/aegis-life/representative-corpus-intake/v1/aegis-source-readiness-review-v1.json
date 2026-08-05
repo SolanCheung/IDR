@@ -280,6 +280,10 @@
       "status": "RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED"
     },
     {
+      "gate": "EXACT_INGRESS_IDENTITY_AND_TIME_SEMANTICS",
+      "status": "SPECIFIED_NOT_IMPLEMENTED"
+    },
+    {
       "gate": "SOURCE_SPECIFIC_EXPORT_APPROVAL",
       "status": "UNRESOLVED"
     },

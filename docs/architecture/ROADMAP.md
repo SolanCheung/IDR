@@ -107,6 +107,16 @@ own the 31 fact leaves exactly once, deny IDR/downstream feedback, and require
 satisfied; all producers remain `NOT_IMPLEMENTED`, and the implementation and
 export gates remain `BLOCKED`.
 
+The ingress-receipt trust increment defines the remaining identity and source
+semantics in
+`docs/integrations/IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`, with neutral
+conformance artifacts under
+`contracts/integrations/aegis-life/ingress-receipt-trust/v1/`. It locks four
+UUID namespaces, typed run/turn provenance, actor pseudonymization, exact-byte
+content hashing, correlation, an externally injected monotonic ingress clock,
+and a separate receipt-source binding. The source owner, binding, and runtime
+remain `NOT_IMPLEMENTED`; the export/verification clock is still unresolved.
+
 ### Explicitly excluded
 
 - Setoka;

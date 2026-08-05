@@ -142,6 +142,11 @@ locks the five responsibility profiles and their implementation gate. All five
 profiles remain `NOT_IMPLEMENTED`, so that specification also does not close
 Gate A.
 
+The ingress identity and time profile in
+[`IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`](IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md)
+also remains specification-only. No receipt owner, monotonic clock, or external
+receipt-source binding exists, so it does not close Gate A.
+
 ### Gate B — Passive capture
 
 Requires a separate review. Capture MUST remain asynchronous and non-blocking,

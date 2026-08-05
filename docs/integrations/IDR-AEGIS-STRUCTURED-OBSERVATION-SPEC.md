@@ -134,6 +134,12 @@ idr:aegis:structured-observation-receipt:v1
 The digest covers every receipt field except `receipt_digest` using canonical
 JSON and a NUL byte between the ASCII domain and the encoded object.
 
+Exact receipt ownership, identity namespaces, run/turn provenance, actor
+pseudonymization, content preimage, correlation, monotonic clock, and external
+source-binding requirements are defined by
+[`IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`](IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md).
+No implementation or admitted binding exists.
+
 ## Fact assertions
 
 `assertions` must contain exactly five named assertions:

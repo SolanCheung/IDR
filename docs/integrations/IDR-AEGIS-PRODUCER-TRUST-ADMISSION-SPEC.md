@@ -39,6 +39,11 @@ No fact producer owns an event, run, turn, actor, content, correlation, or
 logical-time identity. No ingress receipt owner may invent semantic,
 fast-path, decision, coordination, or host-projection facts.
 
+The ingress owner's exact source and logical-time contract is specified by
+[`IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`](IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md).
+Fact-producer admission requires its receipt-source binding, but that binding
+and owner remain unimplemented.
+
 ## Trust is not schema validity
 
 These statements are intentionally distinct:

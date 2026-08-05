@@ -83,6 +83,12 @@ specification-only pack under
 all 31 fact leaves exactly once across five producer profiles and keeps every
 producer `NOT_IMPLEMENTED`; only the responsibility-contract check is satisfied.
 
+Ingress receipt ownership and source semantics are locked separately under
+`contracts/integrations/aegis-life/ingress-receipt-trust/v1/`. The synthetic
+contract fixes UUID namespaces, run/turn provenance, actor pseudonymization,
+exact-byte content hashing, correlation, and monotonic logical time while
+keeping the receipt source and its external binding unimplemented.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or
