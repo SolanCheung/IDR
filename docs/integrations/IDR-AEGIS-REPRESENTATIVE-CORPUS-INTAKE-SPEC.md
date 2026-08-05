@@ -2,7 +2,7 @@
 
 Status: **Specification Only / No Data Export Authorization**
 
-Date: 2026-08-04
+Date: 2026-08-05
 
 ## Purpose
 
@@ -224,12 +224,20 @@ It excludes only `bundle_digest` itself.
 - Aegis Life remains the data controller for any future export and must provide
   its own authorization, deletion execution, and audit evidence.
 
-## Current limitation and next gate
+## Current limitation and source-review result
 
-No production exporter exists in this phase because no production source
-schema, authorization, retention operator, or deletion-receipt mechanism has
-been approved. The next gate is a source-specific data-flow review. Until that
-review passes, only synthetic controls may be used with this contract.
+The source-specific data-flow review is recorded in
+[`IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md`](IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md).
+It found no complete or admitted product source for the 42 allowlisted replay
+leaves. Four ingress metadata leaves have candidate-only analogues; all other
+required facts or projections are absent from the product path or exist only in
+synthetic/prebuilt shadow inputs.
+
+No production exporter exists because the versioned structured source,
+authoritative fact producers, export approval, trusted clock, product-side
+allowlist projection, retention operator, deletion receipt, independent label
+workflow, and dedicated sink remain unresolved. Only synthetic controls may be
+used with this contract.
 
 ## Explicit exclusions
 

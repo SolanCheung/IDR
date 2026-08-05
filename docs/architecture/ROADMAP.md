@@ -1,6 +1,6 @@
 # IDR Version Roadmap
 
-Status date: 2026-08-04
+Status date: 2026-08-05
 
 ## Version state
 
@@ -80,6 +80,13 @@ The specification-only representative-corpus intake pack under
 privacy approval, allowlisting, retention/deletion, lineage, digest, and human
 label-binding gates. It uses synthetic controls only and does not authorize a
 production exporter or data access.
+
+The source-specific review under
+`docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md` is complete and pinned
+to the reviewed Aegis commit. It found four candidate-only ingress metadata
+leaves and no admitted source for the complete 42-leaf replay contract. Source
+review completion does not authorize implementation: the representative
+exporter, real-data access, passive capture, and live mirror remain blocked.
 
 ### Explicitly excluded
 

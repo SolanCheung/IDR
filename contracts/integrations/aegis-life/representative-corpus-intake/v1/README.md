@@ -14,14 +14,21 @@ Contents:
 - `fixtures/valid/synthetic-control-intake.json`: digest-bound golden vector;
 - `fixtures/invalid/`: fail-closed governance and substitution cases;
 - `manifest.json`: fixed conformance time and expected rejection codes;
-- `verify-pack.mjs`: dependency-free offline verifier.
+- `verify-pack.mjs`: dependency-free offline intake verifier;
+- `aegis-source-readiness-review-v1.json`: source-pinned coverage of all 42
+  allowlisted replay leaves and every unresolved exporter gate;
+- `verify-source-readiness.mjs`: dependency-free verifier that prevents the
+  source review from silently claiming real-data admission.
 
 Run:
 
 ```bash
 node contracts/integrations/aegis-life/representative-corpus-intake/v1/verify-pack.mjs
+node contracts/integrations/aegis-life/representative-corpus-intake/v1/verify-source-readiness.mjs
 ```
 
 The fixed verification time is fixture input only. A real implementation must
 receive trusted current time externally. Passing this pack does not authorize
 production export, retention, storage, passive capture, or live mirroring.
+The source review is complete, but the representative exporter remains
+`BLOCKED`; only `synthetic_control` is authorized.

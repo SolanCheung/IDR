@@ -1,0 +1,331 @@
+{
+  "schema_id": "idr.aegis.source-readiness-review.v1",
+  "schema_version": 1,
+  "review_id": "idr-aegis-source-review-2026-08-05",
+  "reviewed_at": "2026-08-05",
+  "reviewed_host": {
+    "repository": "Aegis Life",
+    "commit": "381d14fb1dccfeae691286a39579535ef59f7b4e",
+    "tree": "da76b01653bb194e4f192e5768b32a38fd3b2173"
+  },
+  "scope": {
+    "review_scope": "TRACKED_SOURCE_ONLY",
+    "real_data_access": "NONE",
+    "database_access": "NONE",
+    "network_access": "NONE",
+    "production_code_changes": "NONE",
+    "working_tree_content_included": false
+  },
+  "decision": {
+    "source_data_flow_review": "COMPLETE",
+    "representative_exporter": "BLOCKED",
+    "representative_data_access": "NOT_AUTHORIZED",
+    "passive_capture": "NOT_AUTHORIZED",
+    "live_mirror": "NOT_AUTHORIZED",
+    "authorized_corpus_sources": [
+      "synthetic_control"
+    ]
+  },
+  "reviewed_files": [
+    {
+      "path": "crates/kernel/src/runtime.rs",
+      "sha256": "8644805949a56e0263df58465593e97de53b319e5ca19a4da79fd1dc713238f8",
+      "evidence_lines": [
+        "1607-1609",
+        "1940-1963",
+        "1160-1191",
+        "2438-2465"
+      ]
+    },
+    {
+      "path": "crates/core-protocol/src/types.rs",
+      "sha256": "095ec6492adeb47967288de1edf5c2b3eb7154c9092192517e1186c9d9a7eca5",
+      "evidence_lines": [
+        "42-105"
+      ]
+    },
+    {
+      "path": "crates/core-protocol/src/dispatch_context.rs",
+      "sha256": "cbf6d28ff307143747ca9aca1c8706379f61d45321e3cb24dd0fd5a4da90b47b",
+      "evidence_lines": [
+        "1-4",
+        "51-102",
+        "162-188"
+      ]
+    },
+    {
+      "path": "crates/core-protocol/src/services.rs",
+      "sha256": "fa5c790c22e0e649952ef8b03305a2043923d6592cf66052c29c08724584b11a",
+      "evidence_lines": [
+        "116-127",
+        "152-164"
+      ]
+    },
+    {
+      "path": "crates/core-protocol/src/trace.rs",
+      "sha256": "6286b12d8ba8afa0298ddcf6000499267e49c707ddb72cdecb33fdc3d6b2b68e",
+      "evidence_lines": [
+        "322-405"
+      ]
+    },
+    {
+      "path": "crates/journal/src/lib.rs",
+      "sha256": "aa0d76c5b01bcf33f9d778764d199abda24e176183832bd6e5a7be0acc3b7d76",
+      "evidence_lines": [
+        "44-91"
+      ]
+    },
+    {
+      "path": "crates/journal/src/persistence.rs",
+      "sha256": "dfc249b0821cd4bdb0007b88ba91ad3833b654a1cbbf8137eab1e7964ea6f895",
+      "evidence_lines": [
+        "50-145"
+      ]
+    },
+    {
+      "path": "crates/kernel/src/persistence.rs",
+      "sha256": "674191b090823ce09d8d1d2a393d6f331774bbf6c01f32b9a56aecf930a20257",
+      "evidence_lines": [
+        "14-64",
+        "86-117"
+      ]
+    },
+    {
+      "path": "crates/state-store/src/lib.rs",
+      "sha256": "7305ea12eba52cec056fed6927e6db309f53ecb532ca54af91623e1ab30fbaff",
+      "evidence_lines": [
+        "120-158",
+        "161-228"
+      ]
+    },
+    {
+      "path": "crates/state-store/src/dispatch_context.rs",
+      "sha256": "84156d9b839e7583a5dcc4141f9fab7fedd577399155e8e3070d77818260aaad",
+      "evidence_lines": [
+        "57-124"
+      ]
+    },
+    {
+      "path": "crates/state-store/src/production_operations/audit_export.rs",
+      "sha256": "71cf42bef95c217e9ea8591a0cbdda32970c3d546507b6babe1ac560d8522006",
+      "evidence_lines": [
+        "8-68"
+      ]
+    },
+    {
+      "path": "crates/idr-aegis-adapter/src/lib.rs",
+      "sha256": "adcdbf7e05047e3170940c5de04626d481f9e2e800eeb2fa161f05f93f6d577c",
+      "evidence_lines": [
+        "75-97"
+      ]
+    },
+    {
+      "path": "crates/idr-aegis-shadow-validator/src/lib.rs",
+      "sha256": "e6db350001f4c49ac55976fc27cda2db145a49391179fa8123f2076ca698b637",
+      "evidence_lines": [
+        "25-45",
+        "75-103",
+        "135-190"
+      ]
+    }
+  ],
+  "source_surfaces": [
+    {
+      "id": "kernel_user_input_journal_metadata",
+      "status": "CANDIDATE_ONLY",
+      "evidence_refs": [
+        "crates/kernel/src/runtime.rs:1940-1963"
+      ],
+      "finding": "Contains source=user, input_len, and input_receipt_id; lacks digest, run, turn, actor, fact families, host projection, and source governance."
+    },
+    {
+      "id": "system_event_and_goal_state",
+      "status": "PROHIBITED_RAW_SOURCE",
+      "evidence_refs": [
+        "crates/core-protocol/src/types.rs:42-105",
+        "crates/kernel/src/runtime.rs:1160-1191",
+        "crates/state-store/src/lib.rs:161-190",
+        "crates/kernel/src/persistence.rs:14-64"
+      ],
+      "finding": "Contains or may contain free-form input, output, goal descriptions, errors, and memory records."
+    },
+    {
+      "id": "dispatch_context_protocol",
+      "status": "TYPE_ONLY_NOT_WIRED",
+      "evidence_refs": [
+        "crates/core-protocol/src/dispatch_context.rs:1-4",
+        "crates/state-store/src/dispatch_context.rs:57-124"
+      ],
+      "finding": "Defines receipt, digest, logical order, and trace types but is not wired to kernel ingress, journaling, authorization, adapter, or replay and is process-local."
+    },
+    {
+      "id": "trace_protocol",
+      "status": "TYPE_ONLY_NOT_WIRED",
+      "evidence_refs": [
+        "crates/core-protocol/src/trace.rs:322-405"
+      ],
+      "finding": "Caller-provided trace fields are not bound to product ingress and default to InternalOnly privacy."
+    },
+    {
+      "id": "production_operations_audit_export",
+      "status": "UNRELATED_EXPORT",
+      "evidence_refs": [
+        "crates/state-store/src/production_operations/audit_export.rs:8-68"
+      ],
+      "finding": "Exports operational references and counts, not assessment facts; authorization reference is checked only for non-emptiness."
+    },
+    {
+      "id": "idr_shadow_validator",
+      "status": "SYNTHETIC_OR_PREBUILT_ONLY",
+      "evidence_refs": [
+        "crates/idr-aegis-adapter/src/lib.rs:75-97",
+        "crates/idr-aegis-shadow-validator/src/lib.rs:25-45"
+      ],
+      "finding": "Consumes an already constructed IDR request; it does not project Aegis product events into request facts."
+    }
+  ],
+  "field_groups": [
+    {
+      "status": "CANDIDATE_ONLY",
+      "source_surface": "kernel_user_input_journal_metadata",
+      "target_paths": [
+        "observation_ref",
+        "assessment_request.input.event_id",
+        "assessment_request.input.source_actor",
+        "assessment_request.input.correlation_ref"
+      ],
+      "reason": "The receipt UUID and source literal are structurally useful candidates but have no admitted source semantics or governance binding."
+    },
+    {
+      "status": "NOT_FOUND",
+      "source_surface": null,
+      "target_paths": [
+        "assessment_request.input.run_id",
+        "assessment_request.input.turn_id",
+        "assessment_request.input.actor_ref",
+        "assessment_request.input.primary_semantic_role",
+        "assessment_request.input.semantic_roles",
+        "assessment_request.input.content_ref",
+        "assessment_request.input.content_digest",
+        "assessment_request.input.logical_time",
+        "assessment_request.input.schema_version"
+      ],
+      "reason": "No tracked product-ingress record binds these exact semantics; similar type-only fields are not wired."
+    },
+    {
+      "status": "NOT_FOUND",
+      "source_surface": null,
+      "target_paths": [
+        "assessment_request.fast_path_facts.deterministic_command_match",
+        "assessment_request.fast_path_facts.required_parameters_complete",
+        "assessment_request.fast_path_facts.ambiguity_present",
+        "assessment_request.fast_path_facts.authority_context_valid",
+        "assessment_request.fast_path_facts.policy_allows_request",
+        "assessment_request.fast_path_facts.impact_level",
+        "assessment_request.fast_path_facts.reversible",
+        "assessment_request.fast_path_facts.depends_on_human_model"
+      ],
+      "reason": "No authoritative Aegis producer emits the exact IDR fast-path fact family."
+    },
+    {
+      "status": "NOT_FOUND",
+      "source_surface": null,
+      "target_paths": [
+        "assessment_request.decision_facts.multiple_viable_options",
+        "assessment_request.decision_facts.material_tradeoffs",
+        "assessment_request.decision_facts.evidence_conflict",
+        "assessment_request.decision_facts.impact_level",
+        "assessment_request.decision_facts.irreversible_result",
+        "assessment_request.decision_facts.affects_long_term_goal",
+        "assessment_request.decision_facts.host_user_interest_conflict",
+        "assessment_request.decision_facts.simple_lookup",
+        "assessment_request.decision_facts.unique_legal_operation",
+        "assessment_request.decision_facts.user_choice_already_explicit"
+      ],
+      "reason": "No authoritative Aegis producer emits the exact IDR decision fact family."
+    },
+    {
+      "status": "NOT_FOUND",
+      "source_surface": null,
+      "target_paths": [
+        "assessment_request.coordination_facts.response_planned",
+        "assessment_request.coordination_facts.action_planned",
+        "assessment_request.coordination_facts.explicit_confirmation_requested",
+        "assessment_request.coordination_facts.authorization_required",
+        "assessment_request.coordination_facts.action_is_read_only",
+        "assessment_request.coordination_facts.long_running",
+        "assessment_request.coordination_facts.stream_progress",
+        "assessment_request.coordination_facts.safe_to_parallelize"
+      ],
+      "reason": "No authoritative Aegis producer emits the exact IDR coordination fact family."
+    },
+    {
+      "status": "SYNTHETIC_ONLY",
+      "source_surface": "idr_shadow_validator",
+      "target_paths": [
+        "host_projection.coordination_mode",
+        "host_projection.action_posture",
+        "host_projection.next_run_state"
+      ],
+      "reason": "Values exist only in prebuilt replay inputs and synthetic fixtures, not as an independently recorded Aegis host result."
+    }
+  ],
+  "required_gates": [
+    {
+      "gate": "VERSIONED_STRUCTURED_SOURCE_SCHEMA",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "AUTHORITATIVE_FACT_PRODUCERS",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "SOURCE_SPECIFIC_EXPORT_APPROVAL",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "CONSENT_OR_LAWFUL_BASIS",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "FAIL_CLOSED_ALLOWLIST_PROJECTION",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "REDACTION_PROOF",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "TRUSTED_EXPORT_AND_VERIFICATION_CLOCK",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "SOURCE_TO_CANDIDATE_LINEAGE_DIGEST",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "RETENTION_EXECUTOR",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "VERIFIABLE_DELETION_RECEIPT",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "INDEPENDENT_HUMAN_LABEL_WORKFLOW",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "DEDICATED_OFFLINE_SINK",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "HOST_PROJECTION_SEMANTIC_MAPPING",
+      "status": "UNRESOLVED"
+    },
+    {
+      "gate": "SECURITY_AND_PRIVACY_REVIEW",
+      "status": "UNRESOLVED"
+    }
+  ]
+}

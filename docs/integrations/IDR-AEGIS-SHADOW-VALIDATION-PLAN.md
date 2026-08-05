@@ -1,7 +1,7 @@
 # IDR × Aegis Life Shadow Validation Plan
 
 Status: **Validation Only / No Production Authority**  
-Date: 2026-08-04
+Date: 2026-08-05
 
 ## Objective
 
@@ -121,6 +121,13 @@ including externally authorized export, exact structured-facts allowlisting,
 retention/deletion controls, lineage and candidate digests, and independent
 human labels bound to those digests. The current intake fixture is synthetic
 and grants no access to Aegis production data.
+
+The tracked-source review in
+[`IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md`](IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md)
+is complete. It found only candidate ingress correlation metadata and no
+complete source for the IDR input, fact, or host-projection contract. The
+representative exporter therefore remains `BLOCKED`; completing source
+reconnaissance does not close Gate A.
 
 ### Gate B — Passive capture
 

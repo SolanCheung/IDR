@@ -66,6 +66,10 @@ The representative-corpus intake conformance pack lives under
 privacy approval, an exact structured-facts allowlist, retention/deletion
 policy, candidate lineage digests, and independent human labels. Its committed
 input is synthetic; it does not authorize an Aegis production exporter.
+The pinned tracked-source review at
+`docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md` covers every allowlisted
+leaf and concludes that the representative exporter remains `BLOCKED`; only
+synthetic controls are authorized.
 
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare

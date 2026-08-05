@@ -55,3 +55,11 @@ defined in
 `docs/integrations/IDR-AEGIS-REPRESENTATIVE-CORPUS-INTAKE-SPEC.md`, with
 synthetic conformance artifacts under
 `contracts/integrations/aegis-life/representative-corpus-intake/v1/`.
+
+The tracked Aegis source-to-corpus review is documented in
+`docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md`. It covers every
+allowlisted replay leaf and pins the reviewed Aegis commit and source-file
+digests. The result is `REPRESENTATIVE_EXPORTER = BLOCKED`: current ingress
+metadata is incomplete, raw text coexists in Journal/continuity surfaces, and
+the required approval, trusted-time, retention, deletion-receipt, labeling,
+and dedicated-sink controls do not exist.
