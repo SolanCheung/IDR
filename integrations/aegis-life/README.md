@@ -61,8 +61,8 @@ The tracked Aegis source-to-corpus review is documented in
 allowlisted replay leaf and pins the reviewed Aegis commit and source-file
 digests. The result is `REPRESENTATIVE_EXPORTER = BLOCKED`: current ingress
 metadata is incomplete, raw text coexists in Journal/continuity surfaces, and
-the required approval, trusted-time, retention, deletion-receipt, labeling,
-and dedicated-sink controls do not exist.
+the required approval/trusted-time runtime, lawful basis, retention,
+deletion-receipt, labeling, and dedicated-sink controls do not exist.
 
 The specification-only source object and pure mapping are defined in
 `docs/integrations/IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`, with synthetic
@@ -90,3 +90,11 @@ defined in
 synthetic artifacts under
 `contracts/integrations/aegis-life/host-projection-mapping/v1/`. The product
 snapshot owner and mapper remain unimplemented.
+
+The source-specific approval proof, trusted-current-time evidence, exact
+tenant/actor/purpose scope, and fail-closed revocation check are specified in
+`docs/integrations/IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`, with
+synthetic artifacts under
+`contracts/integrations/aegis-life/source-export-approval/v1/`. Only the
+synthetic-control path has a positive conformance result. No production issuer,
+clock, registry, lawful basis, exporter, or real-data access is authorized.

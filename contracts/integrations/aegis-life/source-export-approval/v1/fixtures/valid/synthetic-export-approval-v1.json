@@ -1,0 +1,51 @@
+{
+  "schema_id": "idr.aegis.representative-export-approval.v1",
+  "schema_version": 1,
+  "approval_id": "approval.synthetic.phase10.v1",
+  "assurance": "SYNTHETIC_ONLY",
+  "source_pin": {
+    "repository": "Aegis Life",
+    "commit_sha": "381d14fb1dccfeae691286a39579535ef59f7b4e",
+    "tree_sha": "da76b01653bb194e4f192e5768b32a38fd3b2173"
+  },
+  "exporter_ref": "aegis.synthetic.conformance-exporter.v1",
+  "purpose": "idr_offline_representative_evaluation",
+  "allowed_source_classes": ["synthetic_control"],
+  "allowed_tenant_refs": ["tenant.synthetic.alpha"],
+  "allowed_actor_refs": ["actor.synthetic.0001"],
+  "contract_bindings": {
+    "structured_observation_schema_digest": "sha256:9fc11018249cc4053d4ddfa75e4eda6ae1f6638a592c115a05450249b2382b47",
+    "ingress_source_contract_digest": "sha256:cb79455c5f0610dde99b5489da5761b6d9772189be3bb4a18e933fb5a44c467c",
+    "producer_registry_digest": "sha256:b42a50b98f642874ff8afaab43fb3eea7b7a23d1e29b15fba71fbca839e5952a",
+    "host_mapping_profile_digest": "sha256:826ade217c501b3ee9aa4caf795e78098d4d274e680f88a7103fc599253180ba",
+    "representative_intake_schema_digest": "sha256:473798dffc683d9be807d83591c8c4058b5359a4b2d5d089bf270851778bfb69"
+  },
+  "data_policy": {
+    "allows_raw_content": false,
+    "allows_credentials": false,
+    "allows_human_model": false,
+    "allows_personality_inference": false,
+    "allows_model_training": false,
+    "allows_secondary_use": false,
+    "allows_onward_transfer": false
+  },
+  "limits": {"max_candidates_per_request": 10},
+  "lifecycle": {
+    "status": "ACTIVE",
+    "valid_from_ms": 2000000,
+    "valid_until_ms": 3000000,
+    "supersedes_approval_id": null
+  },
+  "revocation_binding": {
+    "registry_ref": "aegis.synthetic.revocation-registry.v1",
+    "minimum_registry_revision": 7,
+    "failure_policy": "DENY_ON_UNAVAILABLE_UNKNOWN_STALE_OR_ROLLBACK"
+  },
+  "issuer": {
+    "issuer_ref": "idr.synthetic.conformance-issuer.v1",
+    "key_ref": "none.synthetic",
+    "signature_algorithm": "NONE_SYNTHETIC",
+    "signature": "not-a-production-signature"
+  },
+  "approval_digest": "sha256:2c0b866a4975c17291422bb1fa00fa45e7781980b836dd1d3fa0049e0f175513"
+}

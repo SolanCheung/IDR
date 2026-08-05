@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/source-export-approval/v1/idr-aegis-trusted-current-time-evidence-v1.schema.json",
+  "title": "TrustedCurrentTimeEvidenceV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "assurance", "clock_source_ref", "clock_profile_version", "clock_epoch", "sequence", "purpose", "nonce", "attested_time_ms", "uncertainty_ms", "signature_algorithm", "signature", "time_evidence_digest"],
+  "properties": {
+    "schema_id": {"const": "idr.aegis.trusted-current-time-evidence.v1"},
+    "schema_version": {"const": 1},
+    "assurance": {"enum": ["SYNTHETIC_ONLY", "PRODUCTION_ATTESTED"]},
+    "clock_source_ref": {"$ref": "#/$defs/token"},
+    "clock_profile_version": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "clock_epoch": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "purpose": {"const": "aegis_representative_export_verification"},
+    "nonce": {"type": "string", "minLength": 16, "maxLength": 128, "pattern": "^[a-z0-9._:-]+$"},
+    "attested_time_ms": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "uncertainty_ms": {"type": "integer", "minimum": 0, "maximum": 60000},
+    "signature_algorithm": {"enum": ["NONE_SYNTHETIC", "ED25519"]},
+    "signature": {"type": "string", "minLength": 3, "maxLength": 512},
+    "time_evidence_digest": {"$ref": "#/$defs/digest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"assurance": {"const": "SYNTHETIC_ONLY"}}}, "then": {"properties": {"signature_algorithm": {"const": "NONE_SYNTHETIC"}}}},
+    {"if": {"properties": {"assurance": {"const": "PRODUCTION_ATTESTED"}}}, "then": {"properties": {"signature_algorithm": {"const": "ED25519"}}}}
+  ],
+  "$defs": {
+    "token": {"type": "string", "minLength": 3, "maxLength": 180, "pattern": "^[a-z0-9][a-z0-9._:/-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

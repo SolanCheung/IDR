@@ -73,6 +73,12 @@ The conformance verifier receives `verification_time_ms` from its fixture
 manifest. A real implementation must inject trusted current time from outside
 the bundle. Bundle-provided time is never authoritative.
 
+This embedded approval is only a downstream consumption summary. A future
+source read must first verify the external approval, trusted-time evidence,
+request scope, and revocation state defined by
+[`IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`](IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md).
+The summary cannot mint or replace those proofs.
+
 ## Structured-facts allowlist
 
 Only the following replay leaves are admissible:
@@ -233,11 +239,13 @@ leaves. Four ingress metadata leaves have candidate-only analogues; all other
 required facts or projections are absent from the product path or exist only in
 synthetic/prebuilt shadow inputs.
 
-No production exporter exists because the versioned structured source is not
-implemented and the authoritative fact producers, export approval, trusted
-clock, product-side allowlist projection, retention operator, deletion receipt,
-independent label workflow, and dedicated sink remain unresolved. Only
-synthetic controls may be used with this contract.
+No production exporter exists because the versioned structured source and
+authoritative fact producers are not implemented. Export approval and trusted
+clock shapes are specified but have no production issuer, trust anchor, clock,
+revocation registry, or runtime. Lawful basis, product-side allowlist
+projection, retention operator, deletion receipt, independent label workflow,
+and dedicated sink remain unresolved. Only synthetic controls may be used with
+this contract.
 
 The wire shape for the first item is now specified by
 [`IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`](IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md),
@@ -255,6 +263,12 @@ specified by
 [`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
 Its conformance vectors are synthetic and no product source exists, so they do
 not authorize representative intake.
+
+Exact source-specific approval, trusted-current-time, request, and revocation
+bindings are specified by
+[`IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`](IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md).
+Its only positive fixture is synthetic; `CONSENT_OR_LAWFUL_BASIS` and every
+real-data path remain blocked.
 
 ## Explicit exclusions
 

@@ -204,11 +204,11 @@ derivability are insufficient without exact source semantics and lineage.
 | Gate | Finding | Result |
 | --- | --- | --- |
 | Source owner and schema | `AegisStructuredObservationV1` and five producer responsibility profiles are specified, but no Aegis source owner or producer implements them | Specified, not implemented |
-| Export approval | No verified approval object allowing representative offline export | Blocked |
+| Export approval | Exact approval/time/request/revocation shapes are specified, but no production issuer, trust anchor, registry, clock, or approval exists | Specified, not implemented; blocked |
 | Consent or lawful basis | Coordination consent types are unrelated to corpus export | Blocked |
 | Provenance and lineage | No product receipt-to-IDR-candidate lineage digest | Blocked |
 | Allowlist and redaction | No fail-closed product-side projector; raw text coexists in source records | Blocked |
-| Trusted time | Wall-clock calls exist, but no externally injected trusted export/verification clock | Blocked |
+| Trusted time | Externally injected evidence and validity rules are specified; no production clock profile, attestation source, or verifier exists | Specified, not implemented; blocked |
 | Retention | Journal and continuity persistence have no candidate-scoped retention executor | Blocked |
 | Deletion | Generic in-memory removal and file overwrite are not deletion receipts | Blocked |
 | Human labels | No independent reviewer workflow bound to candidate digest | Blocked |
@@ -250,6 +250,9 @@ and receipt-source binding semantics are defined in
 Item 4's independent Host Decision Snapshot, distinct source enums, and exact
 7/4/11 mappings are defined in
 [`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+Item 5's exact approval, purpose, actor/tenant scope, contract binding,
+trusted-time interval, and fail-closed revocation semantics are defined in
+[`IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`](IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md).
 All five producer profiles, the receipt source, and the Host Projection source
 remain `NOT_IMPLEMENTED`. No reviewed Aegis component implements these
 requirements, so this source review's exporter and real-data decisions remain

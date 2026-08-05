@@ -285,7 +285,7 @@
     },
     {
       "gate": "SOURCE_SPECIFIC_EXPORT_APPROVAL",
-      "status": "UNRESOLVED"
+      "status": "SPECIFIED_NOT_IMPLEMENTED"
     },
     {
       "gate": "CONSENT_OR_LAWFUL_BASIS",
@@ -301,7 +301,7 @@
     },
     {
       "gate": "TRUSTED_EXPORT_AND_VERIFICATION_CLOCK",
-      "status": "UNRESOLVED"
+      "status": "SPECIFIED_NOT_IMPLEMENTED"
     },
     {
       "gate": "SOURCE_TO_CANDIDATE_LINEAGE_DIGEST",

@@ -126,6 +126,18 @@ target values, rejects contradictory tuples, and prohibits IDR/Shadow feedback.
 The product snapshot owner and mapper remain `NOT_IMPLEMENTED`, so the Host
 Projection gate is only `SPECIFIED_NOT_IMPLEMENTED`.
 
+The source-export approval increment specifies
+`AegisRepresentativeExportApprovalV1`, `TrustedCurrentTimeEvidenceV1`, and
+`AegisRepresentativeExportVerificationRequestV1` in
+`docs/integrations/IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`, with neutral
+conformance artifacts under
+`contracts/integrations/aegis-life/source-export-approval/v1/`. Exact source,
+purpose, tenant, actor, contract, validity, volume, clock, and revocation
+bindings are fail-closed. Only synthetic control is allowed; no production
+issuer, trusted clock, lawful basis, exporter, or real-data permission exists.
+The approval and clock gates are `SPECIFIED_NOT_IMPLEMENTED`, while
+`CONSENT_OR_LAWFUL_BASIS` remains `UNRESOLVED`.
+
 ### Explicitly excluded
 
 - Setoka;

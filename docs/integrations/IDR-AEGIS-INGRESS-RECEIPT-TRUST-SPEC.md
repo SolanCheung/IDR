@@ -241,8 +241,9 @@ unverifiable restart, or safe-integer exhaustion causes `REJECT_RECEIPT`.
 
 This is the ingress ordering clock. It is not the trusted current time required
 for export approval, retention expiry, revocation checks, or corpus
-verification. Therefore the existing
-`TRUSTED_EXPORT_AND_VERIFICATION_CLOCK` gate remains unresolved.
+verification. The separate source-export approval specification now defines
+that clock evidence shape and verification semantics, but no production clock
+or verifier implements them; the gate is `SPECIFIED_NOT_IMPLEMENTED`.
 
 ## Receipt digest semantics
 
@@ -364,7 +365,7 @@ EXACT_INGRESS_IDENTITY_AND_TIME_SEMANTICS = SPECIFIED_NOT_IMPLEMENTED
 INGRESS_RECEIPT_SOURCE_OWNER = NOT_APPROVED
 INGRESS_RECEIPT_IMPLEMENTATION_GATE = BLOCKED
 RECEIPT_SOURCE_BINDING = SPECIFIED_NOT_IMPLEMENTED
-TRUSTED_EXPORT_AND_VERIFICATION_CLOCK = UNRESOLVED
+TRUSTED_EXPORT_AND_VERIFICATION_CLOCK = SPECIFIED_NOT_IMPLEMENTED
 REPRESENTATIVE_EXPORTER = BLOCKED
 REAL_AEGIS_DATA_ACCESS = NOT_AUTHORIZED
 ```

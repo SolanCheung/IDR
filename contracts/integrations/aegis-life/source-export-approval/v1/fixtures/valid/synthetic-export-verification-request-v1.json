@@ -1,0 +1,44 @@
+{
+  "schema_id": "idr.aegis.representative-export-verification-request.v1",
+  "schema_version": 1,
+  "request_id": "request.synthetic.phase10.v1",
+  "request_nonce": "request-nonce-synthetic-0001",
+  "source_class": "synthetic_control",
+  "source_pin": {
+    "repository": "Aegis Life",
+    "commit_sha": "381d14fb1dccfeae691286a39579535ef59f7b4e",
+    "tree_sha": "da76b01653bb194e4f192e5768b32a38fd3b2173"
+  },
+  "exporter_ref": "aegis.synthetic.conformance-exporter.v1",
+  "purpose": "idr_offline_representative_evaluation",
+  "tenant_ref": "tenant.synthetic.alpha",
+  "actor_ref": "actor.synthetic.0001",
+  "contract_bindings": {
+    "structured_observation_schema_digest": "sha256:9fc11018249cc4053d4ddfa75e4eda6ae1f6638a592c115a05450249b2382b47",
+    "ingress_source_contract_digest": "sha256:cb79455c5f0610dde99b5489da5761b6d9772189be3bb4a18e933fb5a44c467c",
+    "producer_registry_digest": "sha256:b42a50b98f642874ff8afaab43fb3eea7b7a23d1e29b15fba71fbca839e5952a",
+    "host_mapping_profile_digest": "sha256:826ade217c501b3ee9aa4caf795e78098d4d274e680f88a7103fc599253180ba",
+    "representative_intake_schema_digest": "sha256:473798dffc683d9be807d83591c8c4058b5359a4b2d5d089bf270851778bfb69"
+  },
+  "requested_candidate_count": 3,
+  "approval_id": "approval.synthetic.phase10.v1",
+  "approval_digest": "sha256:2c0b866a4975c17291422bb1fa00fa45e7781980b836dd1d3fa0049e0f175513",
+  "time_evidence_digest": "sha256:069c007b2545a0d113e5abe344d7fab853ac7c7c90d80dbb4d645cd7389444f8",
+  "revocation_state": {
+    "registry_ref": "aegis.synthetic.revocation-registry.v1",
+    "registry_revision": 7,
+    "approval_status": "NOT_REVOKED",
+    "checked_at_time_evidence_digest": "sha256:069c007b2545a0d113e5abe344d7fab853ac7c7c90d80dbb4d645cd7389444f8"
+  },
+  "lawful_basis": {"status": "NOT_REQUIRED_SYNTHETIC", "proof_digest": null},
+  "requested_uses": {
+    "raw_content": false,
+    "credentials": false,
+    "human_model": false,
+    "personality_inference": false,
+    "model_training": false,
+    "secondary_use": false,
+    "onward_transfer": false
+  },
+  "request_digest": "sha256:5d0dc2973ceb0ef8b384f5024f180382eb6ec315787a97f7aa430481751aedbe"
+}

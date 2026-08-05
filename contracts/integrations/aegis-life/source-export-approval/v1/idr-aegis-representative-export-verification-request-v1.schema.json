@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/source-export-approval/v1/idr-aegis-representative-export-verification-request-v1.schema.json",
+  "title": "AegisRepresentativeExportVerificationRequestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "request_id", "request_nonce", "source_class", "source_pin", "exporter_ref", "purpose", "tenant_ref", "actor_ref", "contract_bindings", "requested_candidate_count", "approval_id", "approval_digest", "time_evidence_digest", "revocation_state", "lawful_basis", "requested_uses", "request_digest"],
+  "properties": {
+    "schema_id": {"const": "idr.aegis.representative-export-verification-request.v1"},
+    "schema_version": {"const": 1},
+    "request_id": {"$ref": "#/$defs/token"},
+    "request_nonce": {"type": "string", "minLength": 16, "maxLength": 128, "pattern": "^[a-z0-9._:-]+$"},
+    "source_class": {"enum": ["synthetic_control", "product_structured_observation"]},
+    "source_pin": {"$ref": "#/$defs/sourcePin"},
+    "exporter_ref": {"$ref": "#/$defs/token"},
+    "purpose": {"const": "idr_offline_representative_evaluation"},
+    "tenant_ref": {"$ref": "#/$defs/token"},
+    "actor_ref": {"$ref": "#/$defs/token"},
+    "contract_bindings": {"$ref": "#/$defs/contractBindings"},
+    "requested_candidate_count": {"type": "integer", "minimum": 1, "maximum": 10000},
+    "approval_id": {"$ref": "#/$defs/token"},
+    "approval_digest": {"$ref": "#/$defs/digest"},
+    "time_evidence_digest": {"$ref": "#/$defs/digest"},
+    "revocation_state": {"$ref": "#/$defs/revocationState"},
+    "lawful_basis": {"$ref": "#/$defs/lawfulBasis"},
+    "requested_uses": {"$ref": "#/$defs/requestedUses"},
+    "request_digest": {"$ref": "#/$defs/digest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"source_class": {"const": "synthetic_control"}}}, "then": {"properties": {"lawful_basis": {"properties": {"status": {"const": "NOT_REQUIRED_SYNTHETIC"}, "proof_digest": {"type": "null"}}}}}},
+    {"if": {"properties": {"source_class": {"const": "product_structured_observation"}}}, "then": {"properties": {"lawful_basis": {"properties": {"status": {"const": "VERIFIED_EXTERNAL_PROOF"}, "proof_digest": {"$ref": "#/$defs/digest"}}}}}}
+  ],
+  "$defs": {
+    "token": {"type": "string", "minLength": 3, "maxLength": 180, "pattern": "^[a-z0-9][a-z0-9._:/-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sourcePin": {"type": "object", "additionalProperties": false, "required": ["repository", "commit_sha", "tree_sha"], "properties": {"repository": {"const": "Aegis Life"}, "commit_sha": {"$ref": "#/$defs/gitSha"}, "tree_sha": {"$ref": "#/$defs/gitSha"}}},
+    "contractBindings": {"type": "object", "additionalProperties": false, "required": ["structured_observation_schema_digest", "ingress_source_contract_digest", "producer_registry_digest", "host_mapping_profile_digest", "representative_intake_schema_digest"], "properties": {"structured_observation_schema_digest": {"$ref": "#/$defs/digest"}, "ingress_source_contract_digest": {"$ref": "#/$defs/digest"}, "producer_registry_digest": {"$ref": "#/$defs/digest"}, "host_mapping_profile_digest": {"$ref": "#/$defs/digest"}, "representative_intake_schema_digest": {"$ref": "#/$defs/digest"}}},
+    "revocationState": {"type": "object", "additionalProperties": false, "required": ["registry_ref", "registry_revision", "approval_status", "checked_at_time_evidence_digest"], "properties": {"registry_ref": {"$ref": "#/$defs/token"}, "registry_revision": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "approval_status": {"enum": ["NOT_REVOKED", "REVOKED", "UNKNOWN"]}, "checked_at_time_evidence_digest": {"$ref": "#/$defs/digest"}}},
+    "lawfulBasis": {"type": "object", "additionalProperties": false, "required": ["status", "proof_digest"], "properties": {"status": {"enum": ["NOT_REQUIRED_SYNTHETIC", "VERIFIED_EXTERNAL_PROOF", "UNRESOLVED"]}, "proof_digest": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}}},
+    "requestedUses": {"type": "object", "additionalProperties": false, "required": ["raw_content", "credentials", "human_model", "personality_inference", "model_training", "secondary_use", "onward_transfer"], "properties": {"raw_content": {"const": false}, "credentials": {"const": false}, "human_model": {"const": false}, "personality_inference": {"const": false}, "model_training": {"const": false}, "secondary_use": {"const": false}, "onward_transfer": {"const": false}}}
+  }
+}

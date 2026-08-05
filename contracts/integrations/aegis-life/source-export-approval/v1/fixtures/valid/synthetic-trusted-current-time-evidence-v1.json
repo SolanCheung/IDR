@@ -1,0 +1,16 @@
+{
+  "schema_id": "idr.aegis.trusted-current-time-evidence.v1",
+  "schema_version": 1,
+  "assurance": "SYNTHETIC_ONLY",
+  "clock_source_ref": "idr.synthetic.conformance-clock.v1",
+  "clock_profile_version": 1,
+  "clock_epoch": 1,
+  "sequence": 42,
+  "purpose": "aegis_representative_export_verification",
+  "nonce": "clock-nonce-synthetic-0001",
+  "attested_time_ms": 2500000,
+  "uncertainty_ms": 1000,
+  "signature_algorithm": "NONE_SYNTHETIC",
+  "signature": "not-a-production-signature",
+  "time_evidence_digest": "sha256:069c007b2545a0d113e5abe344d7fab853ac7c7c90d80dbb4d645cd7389444f8"
+}

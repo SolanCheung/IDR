@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/source-export-approval/v1/idr-aegis-representative-export-approval-v1.schema.json",
+  "title": "AegisRepresentativeExportApprovalV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "approval_id", "assurance", "source_pin", "exporter_ref", "purpose", "allowed_source_classes", "allowed_tenant_refs", "allowed_actor_refs", "contract_bindings", "data_policy", "limits", "lifecycle", "revocation_binding", "issuer", "approval_digest"],
+  "properties": {
+    "schema_id": {"const": "idr.aegis.representative-export-approval.v1"},
+    "schema_version": {"const": 1},
+    "approval_id": {"$ref": "#/$defs/token"},
+    "assurance": {"enum": ["SYNTHETIC_ONLY", "PRODUCTION_APPROVED"]},
+    "source_pin": {"$ref": "#/$defs/sourcePin"},
+    "exporter_ref": {"$ref": "#/$defs/token"},
+    "purpose": {"const": "idr_offline_representative_evaluation"},
+    "allowed_source_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["synthetic_control", "product_structured_observation"]}},
+    "allowed_tenant_refs": {"$ref": "#/$defs/nonWildcardList"},
+    "allowed_actor_refs": {"$ref": "#/$defs/nonWildcardList"},
+    "contract_bindings": {"$ref": "#/$defs/contractBindings"},
+    "data_policy": {"$ref": "#/$defs/dataPolicy"},
+    "limits": {"$ref": "#/$defs/limits"},
+    "lifecycle": {"$ref": "#/$defs/lifecycle"},
+    "revocation_binding": {"$ref": "#/$defs/revocation"},
+    "issuer": {"$ref": "#/$defs/issuer"},
+    "approval_digest": {"$ref": "#/$defs/digest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"assurance": {"const": "SYNTHETIC_ONLY"}}}, "then": {"properties": {"issuer": {"properties": {"signature_algorithm": {"const": "NONE_SYNTHETIC"}}}}}},
+    {"if": {"properties": {"assurance": {"const": "PRODUCTION_APPROVED"}}}, "then": {"properties": {"issuer": {"properties": {"signature_algorithm": {"const": "ED25519"}}}}}}
+  ],
+  "$defs": {
+    "token": {"type": "string", "minLength": 3, "maxLength": 180, "pattern": "^[a-z0-9][a-z0-9._:/-]*$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sourcePin": {"type": "object", "additionalProperties": false, "required": ["repository", "commit_sha", "tree_sha"], "properties": {"repository": {"const": "Aegis Life"}, "commit_sha": {"$ref": "#/$defs/gitSha"}, "tree_sha": {"$ref": "#/$defs/gitSha"}}},
+    "nonWildcardList": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [{"$ref": "#/$defs/token"}, {"not": {"enum": ["all"]}}]}},
+    "contractBindings": {"type": "object", "additionalProperties": false, "required": ["structured_observation_schema_digest", "ingress_source_contract_digest", "producer_registry_digest", "host_mapping_profile_digest", "representative_intake_schema_digest"], "properties": {"structured_observation_schema_digest": {"$ref": "#/$defs/digest"}, "ingress_source_contract_digest": {"$ref": "#/$defs/digest"}, "producer_registry_digest": {"$ref": "#/$defs/digest"}, "host_mapping_profile_digest": {"$ref": "#/$defs/digest"}, "representative_intake_schema_digest": {"$ref": "#/$defs/digest"}}},
+    "dataPolicy": {"type": "object", "additionalProperties": false, "required": ["allows_raw_content", "allows_credentials", "allows_human_model", "allows_personality_inference", "allows_model_training", "allows_secondary_use", "allows_onward_transfer"], "properties": {"allows_raw_content": {"const": false}, "allows_credentials": {"const": false}, "allows_human_model": {"const": false}, "allows_personality_inference": {"const": false}, "allows_model_training": {"const": false}, "allows_secondary_use": {"const": false}, "allows_onward_transfer": {"const": false}}},
+    "limits": {"type": "object", "additionalProperties": false, "required": ["max_candidates_per_request"], "properties": {"max_candidates_per_request": {"type": "integer", "minimum": 1, "maximum": 10000}}},
+    "lifecycle": {"type": "object", "additionalProperties": false, "required": ["status", "valid_from_ms", "valid_until_ms", "supersedes_approval_id"], "properties": {"status": {"enum": ["ACTIVE", "SUSPENDED", "REVOKED", "EXPIRED", "SUPERSEDED"]}, "valid_from_ms": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "valid_until_ms": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "supersedes_approval_id": {"type": ["string", "null"], "minLength": 3, "maxLength": 180}}},
+    "revocation": {"type": "object", "additionalProperties": false, "required": ["registry_ref", "minimum_registry_revision", "failure_policy"], "properties": {"registry_ref": {"$ref": "#/$defs/token"}, "minimum_registry_revision": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "failure_policy": {"const": "DENY_ON_UNAVAILABLE_UNKNOWN_STALE_OR_ROLLBACK"}}},
+    "issuer": {"type": "object", "additionalProperties": false, "required": ["issuer_ref", "key_ref", "signature_algorithm", "signature"], "properties": {"issuer_ref": {"$ref": "#/$defs/token"}, "key_ref": {"$ref": "#/$defs/token"}, "signature_algorithm": {"enum": ["NONE_SYNTHETIC", "ED25519"]}, "signature": {"type": "string", "minLength": 3, "maxLength": 512}}}
+  }
+}

@@ -713,7 +713,7 @@ const result = {
   cases,
   ingress_receipt_source_owner: "NOT_APPROVED",
   ingress_receipt_implementation_gate: "BLOCKED",
-  trusted_export_and_verification_clock: "UNRESOLVED",
+  trusted_export_and_verification_clock: "SPECIFIED_NOT_IMPLEMENTED",
   representative_exporter: "BLOCKED",
   real_data_access: "NOT_AUTHORIZED",
 };

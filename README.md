@@ -94,6 +94,14 @@ The independent Host Projection mapping is specified under
 source enums map exactly to all 7 coordination modes, 4 action postures, and 11
 run states, but no product Host Decision Snapshot or mapper is implemented.
 
+Source-specific export approval and trusted-current-time semantics are
+specified under
+`contracts/integrations/aegis-life/source-export-approval/v1/`. The approval,
+time evidence, and verification request bind exact purpose, source, tenant,
+actor, contracts, validity, volume, and revocation state. Its only positive
+fixture is `synthetic_control`; lawful basis, production issuers/clocks, the
+exporter, and every real-data path remain blocked.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or

@@ -152,6 +152,12 @@ The Host Projection profile in
 defines total synthetic mapping coverage but no independent product snapshot.
 It therefore does not close Gate A or authorize passive capture.
 
+The source-export authorization profile in
+[`IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md`](IDR-AEGIS-SOURCE-EXPORT-APPROVAL-TRUST-SPEC.md)
+defines exact approval, trusted-time, request, and revocation bindings. Its only
+positive conformance path is synthetic; no production issuer, clock, lawful
+basis, exporter, or source access exists. It therefore does not close Gate A.
+
 ### Gate B — Passive capture
 
 Requires a separate review. Capture MUST remain asynchronous and non-blocking,
