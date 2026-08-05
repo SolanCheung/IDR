@@ -1,0 +1,149 @@
+{
+  "schema_id": "idr.aegis.structured-observation.v1",
+  "schema_version": 1,
+  "observation_ref": "aegis:observation:synthetic:001",
+  "source_system_ref": "aegis:synthetic:structured-source:v1",
+  "lifecycle": {
+    "status": "sealed",
+    "valid_from_logical_time": 90,
+    "valid_until_logical_time": 200,
+    "supersedes_observation_digest": null,
+    "revocation_ref": null
+  },
+  "receipt": {
+    "event_id": "10000000-0000-4000-8000-000000000001",
+    "run_id": "20000000-0000-4000-8000-000000000002",
+    "turn_id": "30000000-0000-4000-8000-000000000003",
+    "input_receipt_id": "40000000-0000-4000-8000-000000000004",
+    "source_actor": "user",
+    "actor_ref": "actor:pseudonymous:001",
+    "content_ref": "content:digest-bound:001",
+    "content_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "correlation_ref": "correlation:synthetic:001",
+    "logical_time": 100,
+    "schema_version": 1,
+    "receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1"
+  },
+  "assertions": {
+    "semantic_roles": {
+      "schema_version": 1,
+      "family": "semantic_roles",
+      "producer": {
+        "producer_ref": "aegis:producer:semantic:synthetic",
+        "producer_kind": "semantic_classifier",
+        "producer_version": "v1.0.0",
+        "policy_ref": "policy:semantic-role:v1",
+        "derivation_class": "deterministic",
+        "idr_output_used": false
+      },
+      "source_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+      "produced_at_logical_time": 101,
+      "facts": {
+        "primary_semantic_role": "intent",
+        "semantic_roles": [
+          "intent",
+          "command"
+        ]
+      },
+      "assertion_digest": "sha256:d8ecdc66e44aea0cc598fc6499a052b1428c15546558b48c119abe74b3fde80b"
+    },
+    "fast_path_facts": {
+      "schema_version": 1,
+      "family": "fast_path_facts",
+      "producer": {
+        "producer_ref": "aegis:producer:fast-path:synthetic",
+        "producer_kind": "command_policy_classifier",
+        "producer_version": "v1.0.0",
+        "policy_ref": "policy:fast-path:v1",
+        "derivation_class": "deterministic",
+        "idr_output_used": false
+      },
+      "source_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+      "produced_at_logical_time": 102,
+      "facts": {
+        "deterministic_command_match": false,
+        "required_parameters_complete": true,
+        "ambiguity_present": true,
+        "authority_context_valid": true,
+        "policy_allows_request": true,
+        "impact_level": "high",
+        "reversible": true,
+        "depends_on_human_model": false
+      },
+      "assertion_digest": "sha256:3ebf7670dac218735f31cb1ad8d58331754243fe8fd49ead60f228d475ea2539"
+    },
+    "decision_facts": {
+      "schema_version": 1,
+      "family": "decision_facts",
+      "producer": {
+        "producer_ref": "aegis:producer:decision:synthetic",
+        "producer_kind": "decision_context_classifier",
+        "producer_version": "v1.0.0",
+        "policy_ref": "policy:decision-context:v1",
+        "derivation_class": "human_reviewed",
+        "idr_output_used": false
+      },
+      "source_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+      "produced_at_logical_time": 103,
+      "facts": {
+        "multiple_viable_options": true,
+        "material_tradeoffs": true,
+        "evidence_conflict": false,
+        "impact_level": "high",
+        "irreversible_result": false,
+        "affects_long_term_goal": true,
+        "host_user_interest_conflict": false,
+        "simple_lookup": false,
+        "unique_legal_operation": false,
+        "user_choice_already_explicit": false
+      },
+      "assertion_digest": "sha256:6bbedc2c09164b8bfc3a9e56535ea786a1beb34cedc3c0932084318ecc2ca2e4"
+    },
+    "coordination_facts": {
+      "schema_version": 1,
+      "family": "coordination_facts",
+      "producer": {
+        "producer_ref": "aegis:producer:coordination:synthetic",
+        "producer_kind": "coordination_planner",
+        "producer_version": "v1.0.0",
+        "policy_ref": "policy:coordination:v1",
+        "derivation_class": "deterministic",
+        "idr_output_used": false
+      },
+      "source_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+      "produced_at_logical_time": 104,
+      "facts": {
+        "response_planned": true,
+        "action_planned": true,
+        "explicit_confirmation_requested": true,
+        "authorization_required": true,
+        "action_is_read_only": false,
+        "long_running": false,
+        "stream_progress": false,
+        "safe_to_parallelize": false
+      },
+      "assertion_digest": "sha256:96bb08615b96f1198082b1d842babdca1ac176f940e8a4b258381b5ccfab0f9c"
+    },
+    "host_projection": {
+      "schema_version": 1,
+      "family": "host_projection",
+      "producer": {
+        "producer_ref": "aegis:producer:host-decision:synthetic",
+        "producer_kind": "aegis_host_decision_runtime",
+        "producer_version": "v1.0.0",
+        "policy_ref": "policy:host-decision:v1",
+        "derivation_class": "deterministic",
+        "idr_output_used": false
+      },
+      "source_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+      "produced_at_logical_time": 105,
+      "facts": {
+        "coordination_mode": "respond_then_confirm_then_act",
+        "action_posture": "waiting_authorization",
+        "next_run_state": "waiting_authorization"
+      },
+      "assertion_digest": "sha256:b70c4fc88ffc59a2a4804b9fc2c0910d2607ca6261a9504d1b48dce2b466d56e"
+    }
+  },
+  "observation_digest": "sha256:883fad2e6de0d47b0eabc35c7d41ed8fe60fb05fe61b7b16e07d8310b9c7927b"
+}

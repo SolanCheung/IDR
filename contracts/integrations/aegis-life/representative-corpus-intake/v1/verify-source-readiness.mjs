@@ -81,6 +81,10 @@ const expectedGates = [
   "HOST_PROJECTION_SEMANTIC_MAPPING",
   "SECURITY_AND_PRIVACY_REVIEW",
 ];
+const expectedGateStatuses = Object.fromEntries(
+  expectedGates.map((gate) => [gate, "UNRESOLVED"]),
+);
+expectedGateStatuses.VERSIONED_STRUCTURED_SOURCE_SCHEMA = "SPECIFIED_NOT_IMPLEMENTED";
 
 function fail(message) {
   throw new Error(`SOURCE_READINESS_INVALID: ${message}`);
@@ -222,7 +226,9 @@ if (JSON.stringify(candidatePaths) !== JSON.stringify(expectedCandidatePaths)) {
 
 const gates = review.required_gates.map((gate) => {
   assertExactKeys(gate, ["gate", "status"], `gate:${gate.gate}`);
-  if (gate.status !== "UNRESOLVED") fail(`gate ${gate.gate} must not be claimed resolved`);
+  if (gate.status !== expectedGateStatuses[gate.gate]) {
+    fail(`gate ${gate.gate} has unexpected status ${gate.status}`);
+  }
   return gate.gate;
 });
 if (new Set(gates).size !== gates.length) fail("duplicate required gate");
@@ -231,5 +237,6 @@ if (JSON.stringify([...gates].sort()) !== JSON.stringify([...expectedGates].sort
 }
 
 console.log(`SOURCE_READINESS_REVIEW=PASS fields=${expectedPaths.length} gates=${expectedGates.length}`);
+console.log("VERSIONED_STRUCTURED_SOURCE_SCHEMA=SPECIFIED_NOT_IMPLEMENTED");
 console.log("REPRESENTATIVE_EXPORTER=BLOCKED");
 console.log("AUTHORIZED_CORPUS_SOURCE=SYNTHETIC_CONTROL_ONLY");

@@ -63,3 +63,10 @@ digests. The result is `REPRESENTATIVE_EXPORTER = BLOCKED`: current ingress
 metadata is incomplete, raw text coexists in Journal/continuity surfaces, and
 the required approval, trusted-time, retention, deletion-receipt, labeling,
 and dedicated-sink controls do not exist.
+
+The specification-only source object and pure mapping are defined in
+`docs/integrations/IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`, with synthetic
+conformance artifacts under
+`contracts/integrations/aegis-life/structured-observation/v1/`. This resolves a
+wire-design gap only. It does not add an Aegis producer or change the blocked
+export decision.

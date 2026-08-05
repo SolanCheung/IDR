@@ -32,3 +32,5 @@ receive trusted current time externally. Passing this pack does not authorize
 production export, retention, storage, passive capture, or live mirroring.
 The source review is complete, but the representative exporter remains
 `BLOCKED`; only `synthetic_control` is authorized.
+The separate structured-observation pack defines the missing source wire shape,
+but its producer remains unimplemented and unauthorized.

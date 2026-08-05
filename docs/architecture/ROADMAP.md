@@ -88,6 +88,15 @@ leaves and no admitted source for the complete 42-leaf replay contract. Source
 review completion does not authorize implementation: the representative
 exporter, real-data access, passive capture, and live mirror remain blocked.
 
+The next specification-only increment defines `AegisStructuredObservationV1`
+under `docs/integrations/IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md` and neutral
+conformance artifacts under
+`contracts/integrations/aegis-life/structured-observation/v1/`. The object
+binds one raw-content-free receipt to five family-specific producer assertions
+and maps them without inference to all 42 Shadow leaves. This changes the
+source-schema gate to `SPECIFIED_NOT_IMPLEMENTED`; no producer, exporter, data
+access, dependency, migration, or production code is authorized.
+
 ### Explicitly excluded
 
 - Setoka;

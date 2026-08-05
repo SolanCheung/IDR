@@ -273,7 +273,7 @@
   "required_gates": [
     {
       "gate": "VERSIONED_STRUCTURED_SOURCE_SCHEMA",
-      "status": "UNRESOLVED"
+      "status": "SPECIFIED_NOT_IMPLEMENTED"
     },
     {
       "gate": "AUTHORITATIVE_FACT_PRODUCERS",

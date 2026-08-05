@@ -1,0 +1,672 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/structured-observation/v1/idr-aegis-structured-observation-v1.schema.json",
+  "title": "IDR Aegis Structured Observation V1",
+  "description": "Specification-only raw-content-free Aegis observation, source assertion, digest, and pure Shadow projection contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "observation_ref",
+    "source_system_ref",
+    "lifecycle",
+    "receipt",
+    "assertions",
+    "observation_digest"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "idr.aegis.structured-observation.v1"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "observation_ref": {
+      "$ref": "#/$defs/refToken"
+    },
+    "source_system_ref": {
+      "$ref": "#/$defs/refToken"
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/lifecycle"
+    },
+    "receipt": {
+      "$ref": "#/$defs/receipt"
+    },
+    "assertions": {
+      "$ref": "#/$defs/assertions"
+    },
+    "observation_digest": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "refToken": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "versionToken": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "valid_from_logical_time",
+        "valid_until_logical_time",
+        "supersedes_observation_digest",
+        "revocation_ref"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "sealed",
+            "superseded",
+            "revoked",
+            "expired"
+          ]
+        },
+        "valid_from_logical_time": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "valid_until_logical_time": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "supersedes_observation_digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revocation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/refToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "run_id",
+        "turn_id",
+        "input_receipt_id",
+        "source_actor",
+        "actor_ref",
+        "content_ref",
+        "content_digest",
+        "correlation_ref",
+        "logical_time",
+        "schema_version",
+        "receipt_digest"
+      ],
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "run_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "input_receipt_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source_actor": {
+          "enum": [
+            "user",
+            "host",
+            "agent",
+            "tool",
+            "external_system",
+            "human_approver",
+            "scheduler",
+            "policy_engine",
+            "device_environment"
+          ]
+        },
+        "actor_ref": {
+          "$ref": "#/$defs/refToken"
+        },
+        "content_ref": {
+          "$ref": "#/$defs/refToken"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "correlation_ref": {
+          "$ref": "#/$defs/refToken"
+        },
+        "logical_time": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "receipt_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "producer_ref",
+        "producer_kind",
+        "producer_version",
+        "policy_ref",
+        "derivation_class",
+        "idr_output_used"
+      ],
+      "properties": {
+        "producer_ref": {
+          "$ref": "#/$defs/refToken"
+        },
+        "producer_kind": {
+          "enum": [
+            "semantic_classifier",
+            "command_policy_classifier",
+            "decision_context_classifier",
+            "coordination_planner",
+            "aegis_host_decision_runtime"
+          ]
+        },
+        "producer_version": {
+          "$ref": "#/$defs/versionToken"
+        },
+        "policy_ref": {
+          "$ref": "#/$defs/refToken"
+        },
+        "derivation_class": {
+          "enum": [
+            "deterministic",
+            "governed_model",
+            "human_reviewed",
+            "mixed"
+          ]
+        },
+        "idr_output_used": {
+          "const": false
+        }
+      }
+    },
+    "assertionBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "family",
+        "producer",
+        "source_receipt_digest",
+        "produced_at_logical_time",
+        "facts",
+        "assertion_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "family": {
+          "enum": [
+            "semantic_roles",
+            "fast_path_facts",
+            "decision_facts",
+            "coordination_facts",
+            "host_projection"
+          ]
+        },
+        "producer": {
+          "$ref": "#/$defs/producer"
+        },
+        "source_receipt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "produced_at_logical_time": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "facts": {
+          "type": "object"
+        },
+        "assertion_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "semanticRolesFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_semantic_role",
+        "semantic_roles"
+      ],
+      "properties": {
+        "primary_semantic_role": {
+          "$ref": "#/$defs/semanticRole"
+        },
+        "semantic_roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/semanticRole"
+          }
+        }
+      }
+    },
+    "semanticRole": {
+      "enum": [
+        "objective",
+        "intent",
+        "command",
+        "fact",
+        "observation",
+        "proposal",
+        "authorization",
+        "policy",
+        "result",
+        "feedback",
+        "time_trigger",
+        "security_signal"
+      ]
+    },
+    "impactLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "fastPathFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deterministic_command_match",
+        "required_parameters_complete",
+        "ambiguity_present",
+        "authority_context_valid",
+        "policy_allows_request",
+        "impact_level",
+        "reversible",
+        "depends_on_human_model"
+      ],
+      "properties": {
+        "deterministic_command_match": {
+          "type": "boolean"
+        },
+        "required_parameters_complete": {
+          "type": "boolean"
+        },
+        "ambiguity_present": {
+          "type": "boolean"
+        },
+        "authority_context_valid": {
+          "type": "boolean"
+        },
+        "policy_allows_request": {
+          "type": "boolean"
+        },
+        "impact_level": {
+          "$ref": "#/$defs/impactLevel"
+        },
+        "reversible": {
+          "type": "boolean"
+        },
+        "depends_on_human_model": {
+          "type": "boolean"
+        }
+      }
+    },
+    "decisionFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "multiple_viable_options",
+        "material_tradeoffs",
+        "evidence_conflict",
+        "impact_level",
+        "irreversible_result",
+        "affects_long_term_goal",
+        "host_user_interest_conflict",
+        "simple_lookup",
+        "unique_legal_operation",
+        "user_choice_already_explicit"
+      ],
+      "properties": {
+        "multiple_viable_options": {
+          "type": "boolean"
+        },
+        "material_tradeoffs": {
+          "type": "boolean"
+        },
+        "evidence_conflict": {
+          "type": "boolean"
+        },
+        "impact_level": {
+          "$ref": "#/$defs/impactLevel"
+        },
+        "irreversible_result": {
+          "type": "boolean"
+        },
+        "affects_long_term_goal": {
+          "type": "boolean"
+        },
+        "host_user_interest_conflict": {
+          "type": "boolean"
+        },
+        "simple_lookup": {
+          "type": "boolean"
+        },
+        "unique_legal_operation": {
+          "type": "boolean"
+        },
+        "user_choice_already_explicit": {
+          "type": "boolean"
+        }
+      }
+    },
+    "coordinationFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "response_planned",
+        "action_planned",
+        "explicit_confirmation_requested",
+        "authorization_required",
+        "action_is_read_only",
+        "long_running",
+        "stream_progress",
+        "safe_to_parallelize"
+      ],
+      "properties": {
+        "response_planned": {
+          "type": "boolean"
+        },
+        "action_planned": {
+          "type": "boolean"
+        },
+        "explicit_confirmation_requested": {
+          "type": "boolean"
+        },
+        "authorization_required": {
+          "type": "boolean"
+        },
+        "action_is_read_only": {
+          "type": "boolean"
+        },
+        "long_running": {
+          "type": "boolean"
+        },
+        "stream_progress": {
+          "type": "boolean"
+        },
+        "safe_to_parallelize": {
+          "type": "boolean"
+        }
+      }
+    },
+    "hostProjectionFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordination_mode",
+        "action_posture",
+        "next_run_state"
+      ],
+      "properties": {
+        "coordination_mode": {
+          "enum": [
+            "respond_only",
+            "act_then_respond",
+            "respond_then_act",
+            "respond_then_confirm_then_act",
+            "parallel",
+            "acknowledge_then_run",
+            "stream_progress_then_final"
+          ]
+        },
+        "action_posture": {
+          "enum": [
+            "none",
+            "blocked",
+            "planned",
+            "waiting_authorization"
+          ]
+        },
+        "next_run_state": {
+          "enum": [
+            "pending",
+            "running",
+            "waiting_input",
+            "waiting_authorization",
+            "waiting_dependency",
+            "succeeded",
+            "rejected",
+            "failed",
+            "cancelled",
+            "timed_out",
+            "invalidated"
+          ]
+        }
+      }
+    },
+    "semanticRolesAssertion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/assertionBase"
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "semantic_roles"
+            },
+            "producer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/producer"
+                },
+                {
+                  "properties": {
+                    "producer_kind": {
+                      "const": "semantic_classifier"
+                    }
+                  }
+                }
+              ]
+            },
+            "facts": {
+              "$ref": "#/$defs/semanticRolesFacts"
+            }
+          }
+        }
+      ]
+    },
+    "fastPathAssertion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/assertionBase"
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "fast_path_facts"
+            },
+            "producer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/producer"
+                },
+                {
+                  "properties": {
+                    "producer_kind": {
+                      "const": "command_policy_classifier"
+                    }
+                  }
+                }
+              ]
+            },
+            "facts": {
+              "$ref": "#/$defs/fastPathFacts"
+            }
+          }
+        }
+      ]
+    },
+    "decisionAssertion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/assertionBase"
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "decision_facts"
+            },
+            "producer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/producer"
+                },
+                {
+                  "properties": {
+                    "producer_kind": {
+                      "const": "decision_context_classifier"
+                    }
+                  }
+                }
+              ]
+            },
+            "facts": {
+              "$ref": "#/$defs/decisionFacts"
+            }
+          }
+        }
+      ]
+    },
+    "coordinationAssertion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/assertionBase"
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "coordination_facts"
+            },
+            "producer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/producer"
+                },
+                {
+                  "properties": {
+                    "producer_kind": {
+                      "const": "coordination_planner"
+                    }
+                  }
+                }
+              ]
+            },
+            "facts": {
+              "$ref": "#/$defs/coordinationFacts"
+            }
+          }
+        }
+      ]
+    },
+    "hostProjectionAssertion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/assertionBase"
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "host_projection"
+            },
+            "producer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/producer"
+                },
+                {
+                  "properties": {
+                    "producer_kind": {
+                      "const": "aegis_host_decision_runtime"
+                    }
+                  }
+                }
+              ]
+            },
+            "facts": {
+              "$ref": "#/$defs/hostProjectionFacts"
+            }
+          }
+        }
+      ]
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semantic_roles",
+        "fast_path_facts",
+        "decision_facts",
+        "coordination_facts",
+        "host_projection"
+      ],
+      "properties": {
+        "semantic_roles": {
+          "$ref": "#/$defs/semanticRolesAssertion"
+        },
+        "fast_path_facts": {
+          "$ref": "#/$defs/fastPathAssertion"
+        },
+        "decision_facts": {
+          "$ref": "#/$defs/decisionAssertion"
+        },
+        "coordination_facts": {
+          "$ref": "#/$defs/coordinationAssertion"
+        },
+        "host_projection": {
+          "$ref": "#/$defs/hostProjectionAssertion"
+        }
+      }
+    }
+  }
+}

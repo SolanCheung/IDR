@@ -233,11 +233,16 @@ leaves. Four ingress metadata leaves have candidate-only analogues; all other
 required facts or projections are absent from the product path or exist only in
 synthetic/prebuilt shadow inputs.
 
-No production exporter exists because the versioned structured source,
-authoritative fact producers, export approval, trusted clock, product-side
-allowlist projection, retention operator, deletion receipt, independent label
-workflow, and dedicated sink remain unresolved. Only synthetic controls may be
-used with this contract.
+No production exporter exists because the versioned structured source is not
+implemented and the authoritative fact producers, export approval, trusted
+clock, product-side allowlist projection, retention operator, deletion receipt,
+independent label workflow, and dedicated sink remain unresolved. Only
+synthetic controls may be used with this contract.
+
+The wire shape for the first item is now specified by
+[`IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`](IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md),
+but no Aegis producer implements it. “Specified” is not “admitted”: every
+downstream intake gate in this document remains mandatory.
 
 ## Explicit exclusions
 

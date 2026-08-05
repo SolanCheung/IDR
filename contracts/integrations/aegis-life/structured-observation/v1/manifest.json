@@ -1,0 +1,128 @@
+{
+  "pack_id": "idr.aegis.structured-observation.conformance.v1",
+  "status": "SPECIFICATION_ONLY",
+  "specification": "docs/integrations/IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md",
+  "schema": "idr-aegis-structured-observation-v1.schema.json",
+  "projection_logical_time": 110,
+  "golden": {
+    "id": "SYNTHETIC_STRUCTURED_OBSERVATION_GOLDEN_V1",
+    "path": "fixtures/valid/synthetic-structured-observation-v1.json",
+    "expected_receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+    "expected_assertion_digests": {
+      "semantic_roles": "sha256:d8ecdc66e44aea0cc598fc6499a052b1428c15546558b48c119abe74b3fde80b",
+      "fast_path_facts": "sha256:3ebf7670dac218735f31cb1ad8d58331754243fe8fd49ead60f228d475ea2539",
+      "decision_facts": "sha256:6bbedc2c09164b8bfc3a9e56535ea786a1beb34cedc3c0932084318ecc2ca2e4",
+      "coordination_facts": "sha256:96bb08615b96f1198082b1d842babdca1ac176f940e8a4b258381b5ccfab0f9c",
+      "host_projection": "sha256:b70c4fc88ffc59a2a4804b9fc2c0910d2607ca6261a9504d1b48dce2b466d56e"
+    },
+    "expected_observation_digest": "sha256:883fad2e6de0d47b0eabc35c7d41ed8fe60fb05fe61b7b16e07d8310b9c7927b",
+    "expected_projection_digest": "sha256:522cb852eca9994bd2ae3aeca111da434b20b08fea69377af24c26db8b7ab8a4"
+  },
+  "negative_cases": [
+    {
+      "id": "TOP_UNKNOWN_FIELD",
+      "mutation": "TOP_UNKNOWN_FIELD",
+      "expected_code": "UNKNOWN_FIELD"
+    },
+    {
+      "id": "RAW_TEXT_IN_RECEIPT",
+      "mutation": "RAW_TEXT_IN_RECEIPT",
+      "expected_code": "PROHIBITED_DATA_FIELD"
+    },
+    {
+      "id": "AUTHORITY_FIELD_INJECTION",
+      "mutation": "AUTHORITY_FIELD_INJECTION",
+      "expected_code": "AUTHORITY_FIELD_INJECTION"
+    },
+    {
+      "id": "RECEIPT_DIGEST_SUBSTITUTION",
+      "mutation": "RECEIPT_DIGEST_SUBSTITUTION",
+      "expected_code": "RECEIPT_DIGEST_MISMATCH"
+    },
+    {
+      "id": "RECEIPT_SUBSTITUTION_RESEALED",
+      "mutation": "RECEIPT_SUBSTITUTION_RESEALED",
+      "expected_code": "ASSERTION_RECEIPT_MISMATCH"
+    },
+    {
+      "id": "ASSERTION_RECEIPT_MISMATCH",
+      "mutation": "ASSERTION_RECEIPT_MISMATCH",
+      "expected_code": "ASSERTION_RECEIPT_MISMATCH"
+    },
+    {
+      "id": "ASSERTION_DIGEST_SUBSTITUTION",
+      "mutation": "ASSERTION_DIGEST_SUBSTITUTION",
+      "expected_code": "ASSERTION_DIGEST_MISMATCH"
+    },
+    {
+      "id": "OBSERVATION_DIGEST_SUBSTITUTION",
+      "mutation": "OBSERVATION_DIGEST_SUBSTITUTION",
+      "expected_code": "OBSERVATION_DIGEST_MISMATCH"
+    },
+    {
+      "id": "IDR_OUTPUT_USED",
+      "mutation": "IDR_OUTPUT_USED",
+      "expected_code": "IDR_CIRCULAR_DERIVATION"
+    },
+    {
+      "id": "PRODUCER_KIND_MISMATCH",
+      "mutation": "PRODUCER_KIND_MISMATCH",
+      "expected_code": "PRODUCER_KIND_MISMATCH"
+    },
+    {
+      "id": "ASSERTION_FAMILY_MISMATCH",
+      "mutation": "ASSERTION_FAMILY_MISMATCH",
+      "expected_code": "ASSERTION_FAMILY_MISMATCH"
+    },
+    {
+      "id": "PRIMARY_ROLE_OMITTED",
+      "mutation": "PRIMARY_ROLE_OMITTED",
+      "expected_code": "PRIMARY_ROLE_OMITTED"
+    },
+    {
+      "id": "DUPLICATE_SEMANTIC_ROLE",
+      "mutation": "DUPLICATE_SEMANTIC_ROLE",
+      "expected_code": "INVALID_SEMANTIC_ROLES"
+    },
+    {
+      "id": "ASSERTION_PRECEDES_RECEIPT",
+      "mutation": "ASSERTION_PRECEDES_RECEIPT",
+      "expected_code": "ASSERTION_PRECEDES_RECEIPT"
+    },
+    {
+      "id": "MISSING_HOST_PROJECTION",
+      "mutation": "MISSING_HOST_PROJECTION",
+      "expected_code": "MISSING_FIELD"
+    },
+    {
+      "id": "LIFECYCLE_SUPERSEDED",
+      "mutation": "LIFECYCLE_SUPERSEDED",
+      "expected_code": "OBSERVATION_NOT_SEALED"
+    },
+    {
+      "id": "PROJECTION_EXPIRED",
+      "mutation": "PROJECTION_EXPIRED",
+      "expected_code": "OBSERVATION_NOT_CURRENT"
+    },
+    {
+      "id": "UUID_COLLISION",
+      "mutation": "UUID_COLLISION",
+      "expected_code": "IDENTITY_COLLISION"
+    },
+    {
+      "id": "INVALID_CONTENT_REFERENCE",
+      "mutation": "INVALID_CONTENT_REFERENCE",
+      "expected_code": "INVALID_REFERENCE"
+    },
+    {
+      "id": "EXTRA_FACT",
+      "mutation": "EXTRA_FACT",
+      "expected_code": "UNKNOWN_FIELD"
+    },
+    {
+      "id": "PRODUCER_POLICY_DRIFT",
+      "mutation": "PRODUCER_POLICY_DRIFT",
+      "expected_code": "ASSERTION_DIGEST_MISMATCH"
+    }
+  ]
+}

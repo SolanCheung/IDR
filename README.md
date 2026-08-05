@@ -71,6 +71,12 @@ The pinned tracked-source review at
 leaf and concludes that the representative exporter remains `BLOCKED`; only
 synthetic controls are authorized.
 
+The specification-only `AegisStructuredObservationV1` pack lives under
+`contracts/integrations/aegis-life/structured-observation/v1/`. It binds a
+raw-content-free receipt to five independent fact-producer assertions, seals
+all layers with domain-separated digests, and projects exactly 42 Shadow
+leaves. No Aegis producer or real-data access is authorized.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or
