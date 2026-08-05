@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/host-projection-mapping/v1/idr-aegis-host-decision-snapshot-v1.schema.json",
+  "title": "AegisHostDecisionSnapshotV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "snapshot_ref",
+    "receipt_digest",
+    "receipt_source_binding_digest",
+    "captured_at_logical_time",
+    "owner_ref",
+    "owner_version",
+    "policy_ref",
+    "host_coordination_strategy",
+    "host_action_state",
+    "host_run_phase",
+    "idr_output_used",
+    "shadow_result_used",
+    "snapshot_digest"
+  ],
+  "properties": {
+    "schema_id": {"const": "idr.aegis.host-decision-snapshot"},
+    "schema_version": {"const": 1},
+    "snapshot_ref": {"$ref": "#/$defs/refToken"},
+    "receipt_digest": {"$ref": "#/$defs/digest"},
+    "receipt_source_binding_digest": {"$ref": "#/$defs/digest"},
+    "captured_at_logical_time": {"$ref": "#/$defs/positiveSafeInteger"},
+    "owner_ref": {"const": "component:aegis-host-decision-runtime"},
+    "owner_version": {"$ref": "#/$defs/refToken"},
+    "policy_ref": {"$ref": "#/$defs/refToken"},
+    "host_coordination_strategy": {
+      "enum": [
+        "response_only",
+        "action_before_response",
+        "response_before_action",
+        "response_then_authorization_gate_then_action",
+        "parallel_response_and_action",
+        "acknowledge_before_background_run",
+        "stream_progress_before_final"
+      ]
+    },
+    "host_action_state": {
+      "enum": ["no_action", "action_blocked", "action_ready", "action_waiting_authorization"]
+    },
+    "host_run_phase": {
+      "enum": [
+        "queued",
+        "executing",
+        "waiting_user_input",
+        "waiting_action_authorization",
+        "waiting_external_dependency",
+        "completed",
+        "declined",
+        "execution_failed",
+        "user_cancelled",
+        "deadline_exceeded",
+        "superseded_or_stale"
+      ]
+    },
+    "idr_output_used": {"const": false},
+    "shadow_result_used": {"const": false},
+    "snapshot_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "refToken": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 180,
+      "pattern": "^[a-z0-9][a-z0-9._:/-]*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    }
+  }
+}

@@ -83,3 +83,10 @@ The upstream receipt-owner and source semantics are defined in
 conformance artifacts under
 `contracts/integrations/aegis-life/ingress-receipt-trust/v1/`. It does not
 implement the ingress owner, monotonic clock, or receipt-source binding.
+
+The independent Host Decision Snapshot and exact 7/4/11 semantic mappings are
+defined in
+`docs/integrations/IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`, with
+synthetic artifacts under
+`contracts/integrations/aegis-life/host-projection-mapping/v1/`. The product
+snapshot owner and mapper remain unimplemented.

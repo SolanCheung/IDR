@@ -1,0 +1,17 @@
+{
+  "schema_id": "idr.aegis.host-decision-snapshot",
+  "schema_version": 1,
+  "snapshot_ref": "snapshot:aegis-host-decision:synthetic-001",
+  "receipt_digest": "sha256:141cf4746aee4897b91d0bc02cdf366f839ac9287c179e06753a2786570488c1",
+  "receipt_source_binding_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "captured_at_logical_time": 120,
+  "owner_ref": "component:aegis-host-decision-runtime",
+  "owner_version": "version:synthetic-host-owner-v1",
+  "policy_ref": "policy:synthetic-host-projection-v1",
+  "host_coordination_strategy": "response_then_authorization_gate_then_action",
+  "host_action_state": "action_waiting_authorization",
+  "host_run_phase": "waiting_action_authorization",
+  "idr_output_used": false,
+  "shadow_result_used": false,
+  "snapshot_digest": "sha256:a85cca539d9fbe4cac14b44896555952cc3d0b6cfddc5414556b10559263454b"
+}

@@ -1,0 +1,145 @@
+{
+  "schema_id": "idr.aegis.host-projection-mapping-profile",
+  "schema_version": 1,
+  "mapping_ref": "mapping:aegis-host-projection:synthetic-v1",
+  "target_projection_schema": {
+    "schema_id": "idr.aegis.structured-observation",
+    "schema_version": 1,
+    "schema_path": "contracts/integrations/aegis-life/structured-observation/v1/idr-aegis-structured-observation-v1.schema.json",
+    "schema_digest": "sha256:9fc11018249cc4053d4ddfa75e4eda6ae1f6638a592c115a05450249b2382b47",
+    "projection_definition": "HostProjectionFactsV1",
+    "required_fields": [
+      "coordination_mode",
+      "action_posture",
+      "next_run_state"
+    ]
+  },
+  "source_review_pin": {
+    "repository": "Aegis Life",
+    "commit_sha": "381d14fb1dccfeae691286a39579535ef59f7b4e",
+    "tree_sha": "da76b01653bb194e4f192e5768b32a38fd3b2173",
+    "review_document": "docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md",
+    "review_scope": "tracked_source_and_documentation_only"
+  },
+  "lifecycle": {
+    "status": "SPECIFICATION_ONLY",
+    "created_at_logical_time": 300,
+    "valid_from_logical_time": 300,
+    "valid_until_logical_time": 3000
+  },
+  "owner": {
+    "owner_kind": "aegis_host_decision_runtime",
+    "owner_ref": "component:aegis-host-decision-runtime",
+    "trust_state": "NOT_IMPLEMENTED",
+    "reason_code": "NO_INDEPENDENT_PRODUCT_HOST_SNAPSHOT"
+  },
+  "source_snapshot_contract": {
+    "schema_id": "idr.aegis.host-decision-snapshot",
+    "schema_version": 1,
+    "schema_path": "contracts/integrations/aegis-life/host-projection-mapping/v1/idr-aegis-host-decision-snapshot-v1.schema.json",
+    "schema_digest": "sha256:9843a34870195b452276011891cd7a31391ad8e32e1e2c3c68e78d46fb9a20af",
+    "status": "SPECIFIED_NOT_IMPLEMENTED",
+    "required_fields": [
+      "schema_id",
+      "schema_version",
+      "snapshot_ref",
+      "receipt_digest",
+      "receipt_source_binding_digest",
+      "captured_at_logical_time",
+      "owner_ref",
+      "owner_version",
+      "policy_ref",
+      "host_coordination_strategy",
+      "host_action_state",
+      "host_run_phase",
+      "idr_output_used",
+      "shadow_result_used",
+      "snapshot_digest"
+    ],
+    "digest_domain": "idr:aegis:host-decision-snapshot:v1",
+    "capture_order": "after_receipt_before_idr_assessment",
+    "invalid_snapshot": "REJECT_PROJECTION"
+  },
+  "coordination_mapping": [
+    {"source": "response_only", "target": "respond_only"},
+    {"source": "action_before_response", "target": "act_then_respond"},
+    {"source": "response_before_action", "target": "respond_then_act"},
+    {"source": "response_then_authorization_gate_then_action", "target": "respond_then_confirm_then_act"},
+    {"source": "parallel_response_and_action", "target": "parallel"},
+    {"source": "acknowledge_before_background_run", "target": "acknowledge_then_run"},
+    {"source": "stream_progress_before_final", "target": "stream_progress_then_final"}
+  ],
+  "action_mapping": [
+    {"source": "no_action", "target": "none"},
+    {"source": "action_blocked", "target": "blocked"},
+    {"source": "action_ready", "target": "planned"},
+    {"source": "action_waiting_authorization", "target": "waiting_authorization"}
+  ],
+  "run_state_mapping": [
+    {"source": "queued", "target": "pending"},
+    {"source": "executing", "target": "running"},
+    {"source": "waiting_user_input", "target": "waiting_input"},
+    {"source": "waiting_action_authorization", "target": "waiting_authorization"},
+    {"source": "waiting_external_dependency", "target": "waiting_dependency"},
+    {"source": "completed", "target": "succeeded"},
+    {"source": "declined", "target": "rejected"},
+    {"source": "execution_failed", "target": "failed"},
+    {"source": "user_cancelled", "target": "cancelled"},
+    {"source": "deadline_exceeded", "target": "timed_out"},
+    {"source": "superseded_or_stale", "target": "invalidated"}
+  ],
+  "consistency_rules": [
+    "no_action_requires_response_only",
+    "non_response_only_requires_action",
+    "waiting_action_requires_waiting_run",
+    "waiting_run_requires_waiting_action",
+    "blocked_action_requires_declined_run",
+    "declined_run_requires_blocked_action"
+  ],
+  "independence_policy": {
+    "capture_order": "source_snapshot_before_idr_assessment",
+    "mapping_mode": "pure_exact_lookup",
+    "network_access": "forbidden",
+    "database_access": "forbidden",
+    "model_call": "forbidden",
+    "unknown_value": "REJECT_PROJECTION",
+    "prohibited_inputs": [
+      "idr_assessment",
+      "idr_coordination_mode",
+      "idr_action_posture",
+      "idr_next_run_state",
+      "shadow_comparison_result",
+      "shadow_divergence",
+      "evaluation_label",
+      "chosen_action",
+      "execution_result",
+      "goal_outcome",
+      "journal_record",
+      "synthetic_fixture_result"
+    ]
+  },
+  "implementation_gate": {
+    "decision": "BLOCKED",
+    "assessed_at_logical_time": 300,
+    "checks": [
+      {"check": "host_mapping_profile_locked", "status": "SATISFIED", "evidence_refs": ["spec:host-projection-mapping-v1"]},
+      {"check": "host_source_owner_approved", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "host_snapshot_implementation_registered", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "pre_idr_capture_order_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "receipt_source_binding_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "source_enum_semantics_reviewed", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "coordination_mapping_coverage_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "action_mapping_coverage_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "run_state_mapping_coverage_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "cross_field_consistency_tested", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "no_circular_derivation_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "deterministic_mapper_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "failure_isolation_verified", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "security_privacy_review_passed", "status": "UNSATISFIED", "evidence_refs": []},
+      {"check": "cross_language_conformance_passed", "status": "UNSATISFIED", "evidence_refs": []}
+    ],
+    "decision_reason": "HOST_PROJECTION_SOURCE_NOT_IMPLEMENTED_OR_APPROVED",
+    "gate_digest": "sha256:fe252a741b0c45664bb72cb1cf34c9092f8cc4039ea12fbfb5a784817e548019"
+  },
+  "profile_digest": "sha256:826ade217c501b3ee9aa4caf795e78098d4d274e680f88a7103fc599253180ba"
+}

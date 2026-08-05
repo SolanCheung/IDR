@@ -117,6 +117,15 @@ content hashing, correlation, an externally injected monotonic ingress clock,
 and a separate receipt-source binding. The source owner, binding, and runtime
 remain `NOT_IMPLEMENTED`; the export/verification clock is still unresolved.
 
+The Host Projection semantic increment defines an independent
+`AegisHostDecisionSnapshotV1` and pure 7/4/11 enum mappings in
+`docs/integrations/IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`, with
+neutral conformance artifacts under
+`contracts/integrations/aegis-life/host-projection-mapping/v1/`. It covers all
+target values, rejects contradictory tuples, and prohibits IDR/Shadow feedback.
+The product snapshot owner and mapper remain `NOT_IMPLEMENTED`, so the Host
+Projection gate is only `SPECIFIED_NOT_IMPLEMENTED`.
+
 ### Explicitly excluded
 
 - Setoka;

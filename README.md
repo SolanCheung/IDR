@@ -89,6 +89,11 @@ contract fixes UUID namespaces, run/turn provenance, actor pseudonymization,
 exact-byte content hashing, correlation, and monotonic logical time while
 keeping the receipt source and its external binding unimplemented.
 
+The independent Host Projection mapping is specified under
+`contracts/integrations/aegis-life/host-projection-mapping/v1/`. Distinct Aegis
+source enums map exactly to all 7 coordination modes, 4 action postures, and 11
+run states, but no product Host Decision Snapshot or mapper is implemented.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or

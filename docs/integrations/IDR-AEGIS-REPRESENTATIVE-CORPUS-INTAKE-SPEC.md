@@ -250,6 +250,12 @@ No Aegis receipt source or fact producer implements these specifications.
 “Specified” is not “admitted”: every downstream intake gate in this document
 remains mandatory.
 
+The independently sourced Host Projection vocabulary and pure mapping are
+specified by
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+Its conformance vectors are synthetic and no product source exists, so they do
+not authorize representative intake.
+
 ## Explicit exclusions
 
 - no real Aegis data export;

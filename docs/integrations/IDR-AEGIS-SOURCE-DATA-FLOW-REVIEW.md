@@ -247,9 +247,13 @@ requirements, and fail-closed implementation gate are defined in
 Item 3's identity, actor, content, correlation, digest, ingress logical-time,
 and receipt-source binding semantics are defined in
 [`IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md`](IDR-AEGIS-INGRESS-RECEIPT-TRUST-SPEC.md).
-All five producer profiles and the receipt source remain `NOT_IMPLEMENTED`.
-No reviewed Aegis component implements these requirements, so this source
-review's exporter and real-data decisions remain unchanged.
+Item 4's independent Host Decision Snapshot, distinct source enums, and exact
+7/4/11 mappings are defined in
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+All five producer profiles, the receipt source, and the Host Projection source
+remain `NOT_IMPLEMENTED`. No reviewed Aegis component implements these
+requirements, so this source review's exporter and real-data decisions remain
+unchanged.
 
 Satisfying this list would authorize a new implementation review, not the
 export itself. It must not modify the frozen IDR V1.3 adapter or silently turn
@@ -262,6 +266,7 @@ SOURCE_DATA_FLOW_REVIEW = COMPLETE
 VERSIONED_STRUCTURED_SOURCE_SCHEMA = SPECIFIED_NOT_IMPLEMENTED
 AUTHORITATIVE_FACT_PRODUCERS = RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED
 EXACT_INGRESS_IDENTITY_AND_TIME_SEMANTICS = SPECIFIED_NOT_IMPLEMENTED
+HOST_PROJECTION_SEMANTIC_MAPPING = SPECIFIED_NOT_IMPLEMENTED
 REPRESENTATIVE_EXPORTER = BLOCKED
 REAL_AEGIS_DATA_ACCESS = NOT AUTHORIZED
 PASSIVE_CAPTURE = NOT AUTHORIZED

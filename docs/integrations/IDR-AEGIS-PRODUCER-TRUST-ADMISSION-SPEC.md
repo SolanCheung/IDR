@@ -267,6 +267,11 @@ runtime state. It must exist before IDR assessment and remain independent of
 the Shadow comparator. Constructing it from an IDR decision is circular and is
 always denied.
 
+Its distinct source enums, snapshot digest, capture order, consistency rules,
+and pure mapping are specified by
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+That profile does not implement or admit the producer.
+
 ## Trust state model
 
 A future profile may move only through immutable decisions:

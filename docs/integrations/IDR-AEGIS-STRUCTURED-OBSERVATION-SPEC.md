@@ -199,6 +199,12 @@ required facts.
 especially `host_projection`, may be reconstructed from an IDR assessment or
 from a Shadow comparison result.
 
+The independent source snapshot, distinct source vocabularies, exact 7/4/11
+mapping tables, consistency rules, and capture-order requirement for
+`host_projection` are defined by
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+No product snapshot or mapper exists.
+
 ### Assertion digest
 
 Each assertion uses the domain:

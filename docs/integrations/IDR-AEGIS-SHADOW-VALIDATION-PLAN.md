@@ -147,6 +147,11 @@ The ingress identity and time profile in
 also remains specification-only. No receipt owner, monotonic clock, or external
 receipt-source binding exists, so it does not close Gate A.
 
+The Host Projection profile in
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md)
+defines total synthetic mapping coverage but no independent product snapshot.
+It therefore does not close Gate A or authorize passive capture.
+
 ### Gate B — Passive capture
 
 Requires a separate review. Capture MUST remain asynchronous and non-blocking,

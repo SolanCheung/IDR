@@ -1,0 +1,61 @@
+{
+  "schema_id": "idr.aegis.host-projection-mapping-vectors",
+  "schema_version": 1,
+  "vectors": [
+    {
+      "id": "RESPONSE_ONLY_COMPLETED",
+      "source": {"host_coordination_strategy": "response_only", "host_action_state": "no_action", "host_run_phase": "completed"},
+      "expected": {"coordination_mode": "respond_only", "action_posture": "none", "next_run_state": "succeeded"}
+    },
+    {
+      "id": "ACTION_BEFORE_RESPONSE_QUEUED",
+      "source": {"host_coordination_strategy": "action_before_response", "host_action_state": "action_ready", "host_run_phase": "queued"},
+      "expected": {"coordination_mode": "act_then_respond", "action_posture": "planned", "next_run_state": "pending"}
+    },
+    {
+      "id": "RESPONSE_BEFORE_ACTION_EXECUTING",
+      "source": {"host_coordination_strategy": "response_before_action", "host_action_state": "action_ready", "host_run_phase": "executing"},
+      "expected": {"coordination_mode": "respond_then_act", "action_posture": "planned", "next_run_state": "running"}
+    },
+    {
+      "id": "AUTHORIZATION_GATE_WAITING",
+      "source": {"host_coordination_strategy": "response_then_authorization_gate_then_action", "host_action_state": "action_waiting_authorization", "host_run_phase": "waiting_action_authorization"},
+      "expected": {"coordination_mode": "respond_then_confirm_then_act", "action_posture": "waiting_authorization", "next_run_state": "waiting_authorization"}
+    },
+    {
+      "id": "PARALLEL_WAITING_DEPENDENCY",
+      "source": {"host_coordination_strategy": "parallel_response_and_action", "host_action_state": "action_ready", "host_run_phase": "waiting_external_dependency"},
+      "expected": {"coordination_mode": "parallel", "action_posture": "planned", "next_run_state": "waiting_dependency"}
+    },
+    {
+      "id": "ACKNOWLEDGE_WAITING_INPUT",
+      "source": {"host_coordination_strategy": "acknowledge_before_background_run", "host_action_state": "action_ready", "host_run_phase": "waiting_user_input"},
+      "expected": {"coordination_mode": "acknowledge_then_run", "action_posture": "planned", "next_run_state": "waiting_input"}
+    },
+    {
+      "id": "STREAM_FAILED",
+      "source": {"host_coordination_strategy": "stream_progress_before_final", "host_action_state": "action_ready", "host_run_phase": "execution_failed"},
+      "expected": {"coordination_mode": "stream_progress_then_final", "action_posture": "planned", "next_run_state": "failed"}
+    },
+    {
+      "id": "BLOCKED_DECLINED",
+      "source": {"host_coordination_strategy": "response_before_action", "host_action_state": "action_blocked", "host_run_phase": "declined"},
+      "expected": {"coordination_mode": "respond_then_act", "action_posture": "blocked", "next_run_state": "rejected"}
+    },
+    {
+      "id": "ACTION_CANCELLED",
+      "source": {"host_coordination_strategy": "response_before_action", "host_action_state": "action_ready", "host_run_phase": "user_cancelled"},
+      "expected": {"coordination_mode": "respond_then_act", "action_posture": "planned", "next_run_state": "cancelled"}
+    },
+    {
+      "id": "ACTION_TIMED_OUT",
+      "source": {"host_coordination_strategy": "action_before_response", "host_action_state": "action_ready", "host_run_phase": "deadline_exceeded"},
+      "expected": {"coordination_mode": "act_then_respond", "action_posture": "planned", "next_run_state": "timed_out"}
+    },
+    {
+      "id": "RESPONSE_ONLY_INVALIDATED",
+      "source": {"host_coordination_strategy": "response_only", "host_action_state": "no_action", "host_run_phase": "superseded_or_stale"},
+      "expected": {"coordination_mode": "respond_only", "action_posture": "none", "next_run_state": "invalidated"}
+    }
+  ]
+}

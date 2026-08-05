@@ -325,7 +325,7 @@
     },
     {
       "gate": "HOST_PROJECTION_SEMANTIC_MAPPING",
-      "status": "UNRESOLVED"
+      "status": "SPECIFIED_NOT_IMPLEMENTED"
     },
     {
       "gate": "SECURITY_AND_PRIVACY_REVIEW",

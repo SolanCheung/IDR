@@ -162,6 +162,11 @@ that returns `act_then_respond`. The matrix MUST report that value as
 unobserved, not claim artificial IDR coverage. A reviewed host projection may
 exercise the corresponding divergence path without changing the IDR result.
 
+The specification-only host mapping profile now covers this value through the
+independent source strategy `action_before_response`; see
+[`IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md`](IDR-AEGIS-HOST-PROJECTION-SEMANTIC-MAPPING-SPEC.md).
+This is synthetic mapping coverage, not observed IDR or Aegis product coverage.
+
 The current deterministic matrix expectation is 20 non-blocking assessments,
 6 blocked assessments, and 14 `INVALID_CONTRACT` rejections. All 40 labels are
 expected to match, all request digests are expected to be unique, and its

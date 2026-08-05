@@ -38,3 +38,5 @@ The producer-trust pack defines exact ownership and implementation gates for
 all five producer families, but all five remain `NOT_IMPLEMENTED`.
 The ingress-receipt trust pack defines exact source and logical-time semantics,
 but the receipt owner, clock, and source binding remain unimplemented.
+The Host Projection mapping pack provides total synthetic enum coverage, but no
+independent Aegis product snapshot or mapper exists.
