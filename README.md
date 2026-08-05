@@ -77,6 +77,12 @@ raw-content-free receipt to five independent fact-producer assertions, seals
 all layers with domain-separated digests, and projects exactly 42 Shadow
 leaves. No Aegis producer or real-data access is authorized.
 
+Producer ownership and implementation admission are separately locked by the
+specification-only pack under
+`contracts/integrations/aegis-life/producer-trust-admission/v1/`. It assigns
+all 31 fact leaves exactly once across five producer profiles and keeps every
+producer `NOT_IMPLEMENTED`; only the responsibility-contract check is satisfied.
+
 Aegis Life validates the frozen V1.3 adapter through a separate
 `idr-aegis-shadow-validator` crate. The validator can replay and compare
 assessments but has no production authority, dispatch, provider, database, or

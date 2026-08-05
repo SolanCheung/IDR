@@ -85,6 +85,8 @@ const expectedGateStatuses = Object.fromEntries(
   expectedGates.map((gate) => [gate, "UNRESOLVED"]),
 );
 expectedGateStatuses.VERSIONED_STRUCTURED_SOURCE_SCHEMA = "SPECIFIED_NOT_IMPLEMENTED";
+expectedGateStatuses.AUTHORITATIVE_FACT_PRODUCERS =
+  "RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED";
 
 function fail(message) {
   throw new Error(`SOURCE_READINESS_INVALID: ${message}`);
@@ -238,5 +240,8 @@ if (JSON.stringify([...gates].sort()) !== JSON.stringify([...expectedGates].sort
 
 console.log(`SOURCE_READINESS_REVIEW=PASS fields=${expectedPaths.length} gates=${expectedGates.length}`);
 console.log("VERSIONED_STRUCTURED_SOURCE_SCHEMA=SPECIFIED_NOT_IMPLEMENTED");
+console.log(
+  "AUTHORITATIVE_FACT_PRODUCERS=RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED",
+);
 console.log("REPRESENTATIVE_EXPORTER=BLOCKED");
 console.log("AUTHORIZED_CORPUS_SOURCE=SYNTHETIC_CONTROL_ONLY");

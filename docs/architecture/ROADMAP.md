@@ -97,6 +97,16 @@ and maps them without inference to all 42 Shadow leaves. This changes the
 source-schema gate to `SPECIFIED_NOT_IMPLEMENTED`; no producer, exporter, data
 access, dependency, migration, or production code is authorized.
 
+The follow-on producer-trust increment is also specification-only. It defines
+`AegisProducerTrustRegistryV1` in
+`docs/integrations/IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md` and its neutral
+conformance pack under
+`contracts/integrations/aegis-life/producer-trust-admission/v1/`. Five profiles
+own the 31 fact leaves exactly once, deny IDR/downstream feedback, and require
+13 fail-closed implementation checks. Only the responsibility contract is
+satisfied; all producers remain `NOT_IMPLEMENTED`, and the implementation and
+export gates remain `BLOCKED`.
+
 ### Explicitly excluded
 
 - Setoka;

@@ -1,0 +1,491 @@
+{
+  "schema_id": "idr.aegis.producer-trust-registry",
+  "schema_version": 1,
+  "registry_ref": "registry:aegis-producer-trust:synthetic-v1",
+  "target_observation_schema": {
+    "schema_id": "idr.aegis.structured-observation",
+    "schema_version": 1,
+    "schema_path": "contracts/integrations/aegis-life/structured-observation/v1/idr-aegis-structured-observation-v1.schema.json",
+    "schema_digest": "sha256:9fc11018249cc4053d4ddfa75e4eda6ae1f6638a592c115a05450249b2382b47",
+    "assertion_binding_mode": "exact_receipt_digest"
+  },
+  "source_review_pin": {
+    "repository": "Aegis Life",
+    "commit_sha": "381d14fb1dccfeae691286a39579535ef59f7b4e",
+    "tree_sha": "da76b01653bb194e4f192e5768b32a38fd3b2173",
+    "review_document": "docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md",
+    "review_scope": "tracked_source_and_documentation_only"
+  },
+  "trust_policy": {
+    "policy_ref": "policy:idr-aegis-producer-trust-admission",
+    "policy_version": "v1",
+    "policy_digest": "sha256:5d3dc942c78a2e98148cda2f724870fef1f7d8709abb49f892d6718769f32995"
+  },
+  "lifecycle": {
+    "status": "SPECIFICATION_ONLY",
+    "created_at_logical_time": 100,
+    "valid_from_logical_time": 100,
+    "valid_until_logical_time": 1000
+  },
+  "producers": [
+    {
+      "family": "semantic_roles",
+      "producer_kind": "semantic_classifier",
+      "owner_boundary": "semantic_ingress",
+      "responsibility": {
+        "owned_fact_paths": [
+          "semantic_roles.primary_semantic_role",
+          "semantic_roles.semantic_roles"
+        ],
+        "required_output_mode": "receipt_bound_assertion",
+        "receipt_binding": "exact_receipt_digest",
+        "failure_mode": "deny_assertion",
+        "independence_rule": "no_idr_or_downstream_feedback"
+      },
+      "input_policy": {
+        "allowed_input_classes": [
+          "ingress_receipt",
+          "ephemeral_user_input",
+          "locale_context",
+          "semantic_taxonomy"
+        ],
+        "prohibited_input_classes": [
+          "idr_assessment",
+          "idr_decision",
+          "shadow_comparison_result",
+          "evaluation_label",
+          "chosen_action",
+          "execution_result",
+          "goal_outcome",
+          "journal_record",
+          "persistence_snapshot",
+          "trace_diagnostic",
+          "provider_response",
+          "arbitrary_json",
+          "offline_corpus_feedback"
+        ],
+        "raw_content_access": "ephemeral_ingress_only",
+        "raw_content_persistence": "forbidden",
+        "unstructured_journal_read": "forbidden",
+        "arbitrary_json_input": "forbidden"
+      },
+      "derivation_policy": {
+        "allowed_derivation_classes": [
+          "deterministic",
+          "governed_model",
+          "human_reviewed",
+          "mixed"
+        ],
+        "model_governance_required": true,
+        "reproducibility_required": true,
+        "idr_output_used": false,
+        "downstream_feedback_used": false
+      },
+      "required_proofs": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ],
+      "trust_state": {
+        "status": "NOT_IMPLEMENTED",
+        "reason_code": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET",
+        "last_review_logical_time": 100
+      },
+      "profile_digest": "sha256:b5e7714309cc58cedd824d6a9d080c9cf7c6385627b5ddec9730aa2225b4e58c"
+    },
+    {
+      "family": "fast_path_facts",
+      "producer_kind": "command_policy_classifier",
+      "owner_boundary": "command_policy",
+      "responsibility": {
+        "owned_fact_paths": [
+          "fast_path_facts.deterministic_command_match",
+          "fast_path_facts.required_parameters_complete",
+          "fast_path_facts.ambiguity_present",
+          "fast_path_facts.authority_context_valid",
+          "fast_path_facts.policy_allows_request",
+          "fast_path_facts.impact_level",
+          "fast_path_facts.reversible",
+          "fast_path_facts.depends_on_human_model"
+        ],
+        "required_output_mode": "receipt_bound_assertion",
+        "receipt_binding": "exact_receipt_digest",
+        "failure_mode": "deny_assertion",
+        "independence_rule": "no_idr_or_downstream_feedback"
+      },
+      "input_policy": {
+        "allowed_input_classes": [
+          "ingress_receipt",
+          "ephemeral_user_input",
+          "authority_context",
+          "command_registry",
+          "parameter_validation_result",
+          "tenant_policy_context"
+        ],
+        "prohibited_input_classes": [
+          "idr_assessment",
+          "idr_decision",
+          "shadow_comparison_result",
+          "evaluation_label",
+          "chosen_action",
+          "execution_result",
+          "goal_outcome",
+          "journal_record",
+          "persistence_snapshot",
+          "trace_diagnostic",
+          "provider_response",
+          "arbitrary_json",
+          "offline_corpus_feedback"
+        ],
+        "raw_content_access": "ephemeral_ingress_only",
+        "raw_content_persistence": "forbidden",
+        "unstructured_journal_read": "forbidden",
+        "arbitrary_json_input": "forbidden"
+      },
+      "derivation_policy": {
+        "allowed_derivation_classes": [
+          "deterministic",
+          "governed_model",
+          "mixed"
+        ],
+        "model_governance_required": true,
+        "reproducibility_required": true,
+        "idr_output_used": false,
+        "downstream_feedback_used": false
+      },
+      "required_proofs": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ],
+      "trust_state": {
+        "status": "NOT_IMPLEMENTED",
+        "reason_code": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET",
+        "last_review_logical_time": 100
+      },
+      "profile_digest": "sha256:92180adc2908a963fee9c122d1d6aef4f021c164447048cab62ea84f7eee1ec9"
+    },
+    {
+      "family": "decision_facts",
+      "producer_kind": "decision_context_classifier",
+      "owner_boundary": "decision_context",
+      "responsibility": {
+        "owned_fact_paths": [
+          "decision_facts.multiple_viable_options",
+          "decision_facts.material_tradeoffs",
+          "decision_facts.evidence_conflict",
+          "decision_facts.impact_level",
+          "decision_facts.irreversible_result",
+          "decision_facts.affects_long_term_goal",
+          "decision_facts.host_user_interest_conflict",
+          "decision_facts.simple_lookup",
+          "decision_facts.unique_legal_operation",
+          "decision_facts.user_choice_already_explicit"
+        ],
+        "required_output_mode": "receipt_bound_assertion",
+        "receipt_binding": "exact_receipt_digest",
+        "failure_mode": "deny_assertion",
+        "independence_rule": "no_idr_or_downstream_feedback"
+      },
+      "input_policy": {
+        "allowed_input_classes": [
+          "ingress_receipt",
+          "semantic_role_assertion",
+          "structured_decision_context",
+          "evidence_conflict_summary",
+          "tenant_policy_context"
+        ],
+        "prohibited_input_classes": [
+          "idr_assessment",
+          "idr_decision",
+          "shadow_comparison_result",
+          "evaluation_label",
+          "chosen_action",
+          "execution_result",
+          "goal_outcome",
+          "journal_record",
+          "persistence_snapshot",
+          "trace_diagnostic",
+          "provider_response",
+          "arbitrary_json",
+          "offline_corpus_feedback"
+        ],
+        "raw_content_access": "none",
+        "raw_content_persistence": "forbidden",
+        "unstructured_journal_read": "forbidden",
+        "arbitrary_json_input": "forbidden"
+      },
+      "derivation_policy": {
+        "allowed_derivation_classes": [
+          "deterministic",
+          "governed_model",
+          "human_reviewed",
+          "mixed"
+        ],
+        "model_governance_required": true,
+        "reproducibility_required": true,
+        "idr_output_used": false,
+        "downstream_feedback_used": false
+      },
+      "required_proofs": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ],
+      "trust_state": {
+        "status": "NOT_IMPLEMENTED",
+        "reason_code": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET",
+        "last_review_logical_time": 100
+      },
+      "profile_digest": "sha256:e296412869331e50c4998d2577a4c6ea7de15eb0c10137f4d9af7383f2ff7197"
+    },
+    {
+      "family": "coordination_facts",
+      "producer_kind": "coordination_planner",
+      "owner_boundary": "coordination_planning",
+      "responsibility": {
+        "owned_fact_paths": [
+          "coordination_facts.response_planned",
+          "coordination_facts.action_planned",
+          "coordination_facts.explicit_confirmation_requested",
+          "coordination_facts.authorization_required",
+          "coordination_facts.action_is_read_only",
+          "coordination_facts.long_running",
+          "coordination_facts.stream_progress",
+          "coordination_facts.safe_to_parallelize"
+        ],
+        "required_output_mode": "receipt_bound_assertion",
+        "receipt_binding": "exact_receipt_digest",
+        "failure_mode": "deny_assertion",
+        "independence_rule": "no_idr_or_downstream_feedback"
+      },
+      "input_policy": {
+        "allowed_input_classes": [
+          "ingress_receipt",
+          "semantic_role_assertion",
+          "decision_fact_assertion",
+          "structured_coordination_context",
+          "authority_context",
+          "tenant_policy_context"
+        ],
+        "prohibited_input_classes": [
+          "idr_assessment",
+          "idr_decision",
+          "shadow_comparison_result",
+          "evaluation_label",
+          "chosen_action",
+          "execution_result",
+          "goal_outcome",
+          "journal_record",
+          "persistence_snapshot",
+          "trace_diagnostic",
+          "provider_response",
+          "arbitrary_json",
+          "offline_corpus_feedback"
+        ],
+        "raw_content_access": "none",
+        "raw_content_persistence": "forbidden",
+        "unstructured_journal_read": "forbidden",
+        "arbitrary_json_input": "forbidden"
+      },
+      "derivation_policy": {
+        "allowed_derivation_classes": [
+          "deterministic",
+          "governed_model",
+          "mixed"
+        ],
+        "model_governance_required": true,
+        "reproducibility_required": true,
+        "idr_output_used": false,
+        "downstream_feedback_used": false
+      },
+      "required_proofs": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ],
+      "trust_state": {
+        "status": "NOT_IMPLEMENTED",
+        "reason_code": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET",
+        "last_review_logical_time": 100
+      },
+      "profile_digest": "sha256:14ac032b5a99b517bf1d4152c1c3e885228478154f8f94406dcf8c6df0ca52b3"
+    },
+    {
+      "family": "host_projection",
+      "producer_kind": "aegis_host_decision_runtime",
+      "owner_boundary": "host_decision_runtime",
+      "responsibility": {
+        "owned_fact_paths": [
+          "host_projection.coordination_mode",
+          "host_projection.action_posture",
+          "host_projection.next_run_state"
+        ],
+        "required_output_mode": "receipt_bound_assertion",
+        "receipt_binding": "exact_receipt_digest",
+        "failure_mode": "deny_assertion",
+        "independence_rule": "no_idr_or_downstream_feedback"
+      },
+      "input_policy": {
+        "allowed_input_classes": [
+          "ingress_receipt",
+          "semantic_role_assertion",
+          "fast_path_assertion",
+          "decision_fact_assertion",
+          "coordination_fact_assertion",
+          "host_runtime_state"
+        ],
+        "prohibited_input_classes": [
+          "idr_assessment",
+          "idr_decision",
+          "shadow_comparison_result",
+          "evaluation_label",
+          "chosen_action",
+          "execution_result",
+          "goal_outcome",
+          "journal_record",
+          "persistence_snapshot",
+          "trace_diagnostic",
+          "provider_response",
+          "arbitrary_json",
+          "offline_corpus_feedback"
+        ],
+        "raw_content_access": "none",
+        "raw_content_persistence": "forbidden",
+        "unstructured_journal_read": "forbidden",
+        "arbitrary_json_input": "forbidden"
+      },
+      "derivation_policy": {
+        "allowed_derivation_classes": [
+          "deterministic"
+        ],
+        "model_governance_required": false,
+        "reproducibility_required": true,
+        "idr_output_used": false,
+        "downstream_feedback_used": false
+      },
+      "required_proofs": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ],
+      "trust_state": {
+        "status": "NOT_IMPLEMENTED",
+        "reason_code": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET",
+        "last_review_logical_time": 100
+      },
+      "profile_digest": "sha256:47d020ea6c126837a78caf74f8919b755b0f2fca7c3841b0254f7be5d6fef628"
+    }
+  ],
+  "implementation_gate": {
+    "decision": "BLOCKED",
+    "assessed_at_logical_time": 100,
+    "checks": [
+      {
+        "check": "responsibility_contract_locked",
+        "status": "SATISFIED",
+        "evidence_refs": [
+          "spec:producer-responsibility-v1"
+        ]
+      },
+      {
+        "check": "source_owner_approved",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "implementation_registered",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "implementation_tree_pinned",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "policy_and_model_artifacts_pinned",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "trusted_logical_clock_verified",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "receipt_lineage_verified",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "exact_fact_coverage_verified",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "no_circular_derivation_verified",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "failure_isolation_verified",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "security_privacy_review_passed",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "revocation_rollback_tested",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      },
+      {
+        "check": "cross_language_conformance_passed",
+        "status": "UNSATISFIED",
+        "evidence_refs": []
+      }
+    ],
+    "decision_reason": "PRODUCERS_NOT_IMPLEMENTED_OR_ADMITTED",
+    "gate_digest": "sha256:3cd5b6f5c5e27b80314b46285f241488a1ffa525eee1d2c9cb58ac363f1a3f36"
+  },
+  "registry_digest": "sha256:b42a50b98f642874ff8afaab43fb3eea7b7a23d1e29b15fba71fbca839e5952a"
+}

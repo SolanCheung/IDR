@@ -241,8 +241,10 @@ synthetic controls may be used with this contract.
 
 The wire shape for the first item is now specified by
 [`IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`](IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md),
-but no Aegis producer implements it. “Specified” is not “admitted”: every
-downstream intake gate in this document remains mandatory.
+and exact producer responsibilities and implementation gates are specified by
+[`IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md`](IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md).
+No Aegis producer implements either specification. “Specified” is not
+“admitted”: every downstream intake gate in this document remains mandatory.
 
 ## Explicit exclusions
 

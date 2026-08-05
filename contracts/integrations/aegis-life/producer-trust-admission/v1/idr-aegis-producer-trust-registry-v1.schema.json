@@ -1,0 +1,795 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.local/contracts/integrations/aegis-life/producer-trust-admission/v1/idr-aegis-producer-trust-registry-v1.schema.json",
+  "title": "AegisProducerTrustRegistryV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "registry_ref",
+    "target_observation_schema",
+    "source_review_pin",
+    "trust_policy",
+    "lifecycle",
+    "producers",
+    "implementation_gate",
+    "registry_digest"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "idr.aegis.producer-trust-registry"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "registry_ref": {
+      "$ref": "#/$defs/refToken"
+    },
+    "target_observation_schema": {
+      "$ref": "#/$defs/targetObservationSchema"
+    },
+    "source_review_pin": {
+      "$ref": "#/$defs/sourceReviewPin"
+    },
+    "trust_policy": {
+      "$ref": "#/$defs/trustPolicy"
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/lifecycle"
+    },
+    "producers": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/producerProfile"
+      }
+    },
+    "implementation_gate": {
+      "$ref": "#/$defs/implementationGate"
+    },
+    "registry_digest": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "refToken": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 160,
+      "pattern": "^[a-z0-9][a-z0-9._:/-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "safeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "targetObservationSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "schema_version",
+        "schema_path",
+        "schema_digest",
+        "assertion_binding_mode"
+      ],
+      "properties": {
+        "schema_id": {
+          "const": "idr.aegis.structured-observation"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "schema_path": {
+          "const": "contracts/integrations/aegis-life/structured-observation/v1/idr-aegis-structured-observation-v1.schema.json"
+        },
+        "schema_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "assertion_binding_mode": {
+          "const": "exact_receipt_digest"
+        }
+      }
+    },
+    "sourceReviewPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit_sha",
+        "tree_sha",
+        "review_document",
+        "review_scope"
+      ],
+      "properties": {
+        "repository": {
+          "const": "Aegis Life"
+        },
+        "commit_sha": {
+          "const": "381d14fb1dccfeae691286a39579535ef59f7b4e"
+        },
+        "tree_sha": {
+          "const": "da76b01653bb194e4f192e5768b32a38fd3b2173"
+        },
+        "review_document": {
+          "const": "docs/integrations/IDR-AEGIS-SOURCE-DATA-FLOW-REVIEW.md"
+        },
+        "review_scope": {
+          "const": "tracked_source_and_documentation_only"
+        }
+      }
+    },
+    "trustPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_ref",
+        "policy_version",
+        "policy_digest"
+      ],
+      "properties": {
+        "policy_ref": {
+          "const": "policy:idr-aegis-producer-trust-admission"
+        },
+        "policy_version": {
+          "const": "v1"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "created_at_logical_time",
+        "valid_from_logical_time",
+        "valid_until_logical_time"
+      ],
+      "properties": {
+        "status": {
+          "const": "SPECIFICATION_ONLY"
+        },
+        "created_at_logical_time": {
+          "$ref": "#/$defs/safeInteger"
+        },
+        "valid_from_logical_time": {
+          "$ref": "#/$defs/safeInteger"
+        },
+        "valid_until_logical_time": {
+          "$ref": "#/$defs/safeInteger"
+        }
+      }
+    },
+    "family": {
+      "enum": [
+        "semantic_roles",
+        "fast_path_facts",
+        "decision_facts",
+        "coordination_facts",
+        "host_projection"
+      ]
+    },
+    "producerKind": {
+      "enum": [
+        "semantic_classifier",
+        "command_policy_classifier",
+        "decision_context_classifier",
+        "coordination_planner",
+        "aegis_host_decision_runtime"
+      ]
+    },
+    "ownerBoundary": {
+      "enum": [
+        "semantic_ingress",
+        "command_policy",
+        "decision_context",
+        "coordination_planning",
+        "host_decision_runtime"
+      ]
+    },
+    "factPath": {
+      "enum": [
+        "semantic_roles.primary_semantic_role",
+        "semantic_roles.semantic_roles",
+        "fast_path_facts.deterministic_command_match",
+        "fast_path_facts.required_parameters_complete",
+        "fast_path_facts.ambiguity_present",
+        "fast_path_facts.authority_context_valid",
+        "fast_path_facts.policy_allows_request",
+        "fast_path_facts.impact_level",
+        "fast_path_facts.reversible",
+        "fast_path_facts.depends_on_human_model",
+        "decision_facts.multiple_viable_options",
+        "decision_facts.material_tradeoffs",
+        "decision_facts.evidence_conflict",
+        "decision_facts.impact_level",
+        "decision_facts.irreversible_result",
+        "decision_facts.affects_long_term_goal",
+        "decision_facts.host_user_interest_conflict",
+        "decision_facts.simple_lookup",
+        "decision_facts.unique_legal_operation",
+        "decision_facts.user_choice_already_explicit",
+        "coordination_facts.response_planned",
+        "coordination_facts.action_planned",
+        "coordination_facts.explicit_confirmation_requested",
+        "coordination_facts.authorization_required",
+        "coordination_facts.action_is_read_only",
+        "coordination_facts.long_running",
+        "coordination_facts.stream_progress",
+        "coordination_facts.safe_to_parallelize",
+        "host_projection.coordination_mode",
+        "host_projection.action_posture",
+        "host_projection.next_run_state"
+      ]
+    },
+    "responsibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owned_fact_paths",
+        "required_output_mode",
+        "receipt_binding",
+        "failure_mode",
+        "independence_rule"
+      ],
+      "properties": {
+        "owned_fact_paths": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/factPath"
+          }
+        },
+        "required_output_mode": {
+          "const": "receipt_bound_assertion"
+        },
+        "receipt_binding": {
+          "const": "exact_receipt_digest"
+        },
+        "failure_mode": {
+          "const": "deny_assertion"
+        },
+        "independence_rule": {
+          "const": "no_idr_or_downstream_feedback"
+        }
+      }
+    },
+    "inputClass": {
+      "enum": [
+        "ingress_receipt",
+        "ephemeral_user_input",
+        "locale_context",
+        "semantic_taxonomy",
+        "authority_context",
+        "command_registry",
+        "parameter_validation_result",
+        "tenant_policy_context",
+        "semantic_role_assertion",
+        "structured_decision_context",
+        "evidence_conflict_summary",
+        "decision_fact_assertion",
+        "structured_coordination_context",
+        "fast_path_assertion",
+        "coordination_fact_assertion",
+        "host_runtime_state"
+      ]
+    },
+    "prohibitedInputClass": {
+      "enum": [
+        "idr_assessment",
+        "idr_decision",
+        "shadow_comparison_result",
+        "evaluation_label",
+        "chosen_action",
+        "execution_result",
+        "goal_outcome",
+        "journal_record",
+        "persistence_snapshot",
+        "trace_diagnostic",
+        "provider_response",
+        "arbitrary_json",
+        "offline_corpus_feedback"
+      ]
+    },
+    "inputPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_input_classes",
+        "prohibited_input_classes",
+        "raw_content_access",
+        "raw_content_persistence",
+        "unstructured_journal_read",
+        "arbitrary_json_input"
+      ],
+      "properties": {
+        "allowed_input_classes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/inputClass"
+          }
+        },
+        "prohibited_input_classes": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/prohibitedInputClass"
+          }
+        },
+        "raw_content_access": {
+          "enum": [
+            "none",
+            "ephemeral_ingress_only"
+          ]
+        },
+        "raw_content_persistence": {
+          "const": "forbidden"
+        },
+        "unstructured_journal_read": {
+          "const": "forbidden"
+        },
+        "arbitrary_json_input": {
+          "const": "forbidden"
+        }
+      }
+    },
+    "derivationClass": {
+      "enum": [
+        "deterministic",
+        "governed_model",
+        "human_reviewed",
+        "mixed"
+      ]
+    },
+    "derivationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_derivation_classes",
+        "model_governance_required",
+        "reproducibility_required",
+        "idr_output_used",
+        "downstream_feedback_used"
+      ],
+      "properties": {
+        "allowed_derivation_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/derivationClass"
+          }
+        },
+        "model_governance_required": {
+          "type": "boolean"
+        },
+        "reproducibility_required": {
+          "const": true
+        },
+        "idr_output_used": {
+          "const": false
+        },
+        "downstream_feedback_used": {
+          "const": false
+        }
+      }
+    },
+    "proofKind": {
+      "enum": [
+        "implementation_identity",
+        "policy_artifact_identity",
+        "receipt_lineage",
+        "exact_fact_coverage",
+        "prohibited_input_non_use",
+        "fail_closed_behavior",
+        "reproducibility_bounds",
+        "security_privacy_isolation",
+        "revocation_rollback",
+        "cross_language_conformance"
+      ]
+    },
+    "trustState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reason_code",
+        "last_review_logical_time"
+      ],
+      "properties": {
+        "status": {
+          "const": "NOT_IMPLEMENTED"
+        },
+        "reason_code": {
+          "const": "NO_IMPLEMENTATION_OR_ADMISSION_PACKET"
+        },
+        "last_review_logical_time": {
+          "$ref": "#/$defs/safeInteger"
+        }
+      }
+    },
+    "producerProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "producer_kind",
+        "owner_boundary",
+        "responsibility",
+        "input_policy",
+        "derivation_policy",
+        "required_proofs",
+        "trust_state",
+        "profile_digest"
+      ],
+      "properties": {
+        "family": {
+          "$ref": "#/$defs/family"
+        },
+        "producer_kind": {
+          "$ref": "#/$defs/producerKind"
+        },
+        "owner_boundary": {
+          "$ref": "#/$defs/ownerBoundary"
+        },
+        "responsibility": {
+          "$ref": "#/$defs/responsibility"
+        },
+        "input_policy": {
+          "$ref": "#/$defs/inputPolicy"
+        },
+        "derivation_policy": {
+          "$ref": "#/$defs/derivationPolicy"
+        },
+        "required_proofs": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/proofKind"
+          }
+        },
+        "trust_state": {
+          "$ref": "#/$defs/trustState"
+        },
+        "profile_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "family": {"const": "semantic_roles"},
+            "producer_kind": {"const": "semantic_classifier"},
+            "owner_boundary": {"const": "semantic_ingress"},
+            "responsibility": {
+              "properties": {
+                "owned_fact_paths": {
+                  "const": [
+                    "semantic_roles.primary_semantic_role",
+                    "semantic_roles.semantic_roles"
+                  ]
+                }
+              }
+            },
+            "input_policy": {
+              "properties": {
+                "allowed_input_classes": {
+                  "const": [
+                    "ingress_receipt",
+                    "ephemeral_user_input",
+                    "locale_context",
+                    "semantic_taxonomy"
+                  ]
+                },
+                "raw_content_access": {"const": "ephemeral_ingress_only"}
+              }
+            },
+            "derivation_policy": {
+              "properties": {
+                "allowed_derivation_classes": {
+                  "const": [
+                    "deterministic",
+                    "governed_model",
+                    "human_reviewed",
+                    "mixed"
+                  ]
+                },
+                "model_governance_required": {"const": true}
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "family": {"const": "fast_path_facts"},
+            "producer_kind": {"const": "command_policy_classifier"},
+            "owner_boundary": {"const": "command_policy"},
+            "responsibility": {
+              "properties": {
+                "owned_fact_paths": {
+                  "const": [
+                    "fast_path_facts.deterministic_command_match",
+                    "fast_path_facts.required_parameters_complete",
+                    "fast_path_facts.ambiguity_present",
+                    "fast_path_facts.authority_context_valid",
+                    "fast_path_facts.policy_allows_request",
+                    "fast_path_facts.impact_level",
+                    "fast_path_facts.reversible",
+                    "fast_path_facts.depends_on_human_model"
+                  ]
+                }
+              }
+            },
+            "input_policy": {
+              "properties": {
+                "allowed_input_classes": {
+                  "const": [
+                    "ingress_receipt",
+                    "ephemeral_user_input",
+                    "authority_context",
+                    "command_registry",
+                    "parameter_validation_result",
+                    "tenant_policy_context"
+                  ]
+                },
+                "raw_content_access": {"const": "ephemeral_ingress_only"}
+              }
+            },
+            "derivation_policy": {
+              "properties": {
+                "allowed_derivation_classes": {
+                  "const": ["deterministic", "governed_model", "mixed"]
+                },
+                "model_governance_required": {"const": true}
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "family": {"const": "decision_facts"},
+            "producer_kind": {"const": "decision_context_classifier"},
+            "owner_boundary": {"const": "decision_context"},
+            "responsibility": {
+              "properties": {
+                "owned_fact_paths": {
+                  "const": [
+                    "decision_facts.multiple_viable_options",
+                    "decision_facts.material_tradeoffs",
+                    "decision_facts.evidence_conflict",
+                    "decision_facts.impact_level",
+                    "decision_facts.irreversible_result",
+                    "decision_facts.affects_long_term_goal",
+                    "decision_facts.host_user_interest_conflict",
+                    "decision_facts.simple_lookup",
+                    "decision_facts.unique_legal_operation",
+                    "decision_facts.user_choice_already_explicit"
+                  ]
+                }
+              }
+            },
+            "input_policy": {
+              "properties": {
+                "allowed_input_classes": {
+                  "const": [
+                    "ingress_receipt",
+                    "semantic_role_assertion",
+                    "structured_decision_context",
+                    "evidence_conflict_summary",
+                    "tenant_policy_context"
+                  ]
+                },
+                "raw_content_access": {"const": "none"}
+              }
+            },
+            "derivation_policy": {
+              "properties": {
+                "allowed_derivation_classes": {
+                  "const": [
+                    "deterministic",
+                    "governed_model",
+                    "human_reviewed",
+                    "mixed"
+                  ]
+                },
+                "model_governance_required": {"const": true}
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "family": {"const": "coordination_facts"},
+            "producer_kind": {"const": "coordination_planner"},
+            "owner_boundary": {"const": "coordination_planning"},
+            "responsibility": {
+              "properties": {
+                "owned_fact_paths": {
+                  "const": [
+                    "coordination_facts.response_planned",
+                    "coordination_facts.action_planned",
+                    "coordination_facts.explicit_confirmation_requested",
+                    "coordination_facts.authorization_required",
+                    "coordination_facts.action_is_read_only",
+                    "coordination_facts.long_running",
+                    "coordination_facts.stream_progress",
+                    "coordination_facts.safe_to_parallelize"
+                  ]
+                }
+              }
+            },
+            "input_policy": {
+              "properties": {
+                "allowed_input_classes": {
+                  "const": [
+                    "ingress_receipt",
+                    "semantic_role_assertion",
+                    "decision_fact_assertion",
+                    "structured_coordination_context",
+                    "authority_context",
+                    "tenant_policy_context"
+                  ]
+                },
+                "raw_content_access": {"const": "none"}
+              }
+            },
+            "derivation_policy": {
+              "properties": {
+                "allowed_derivation_classes": {
+                  "const": ["deterministic", "governed_model", "mixed"]
+                },
+                "model_governance_required": {"const": true}
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "family": {"const": "host_projection"},
+            "producer_kind": {"const": "aegis_host_decision_runtime"},
+            "owner_boundary": {"const": "host_decision_runtime"},
+            "responsibility": {
+              "properties": {
+                "owned_fact_paths": {
+                  "const": [
+                    "host_projection.coordination_mode",
+                    "host_projection.action_posture",
+                    "host_projection.next_run_state"
+                  ]
+                }
+              }
+            },
+            "input_policy": {
+              "properties": {
+                "allowed_input_classes": {
+                  "const": [
+                    "ingress_receipt",
+                    "semantic_role_assertion",
+                    "fast_path_assertion",
+                    "decision_fact_assertion",
+                    "coordination_fact_assertion",
+                    "host_runtime_state"
+                  ]
+                },
+                "raw_content_access": {"const": "none"}
+              }
+            },
+            "derivation_policy": {
+              "properties": {
+                "allowed_derivation_classes": {"const": ["deterministic"]},
+                "model_governance_required": {"const": false}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "gateCheckName": {
+      "enum": [
+        "responsibility_contract_locked",
+        "source_owner_approved",
+        "implementation_registered",
+        "implementation_tree_pinned",
+        "policy_and_model_artifacts_pinned",
+        "trusted_logical_clock_verified",
+        "receipt_lineage_verified",
+        "exact_fact_coverage_verified",
+        "no_circular_derivation_verified",
+        "failure_isolation_verified",
+        "security_privacy_review_passed",
+        "revocation_rollback_tested",
+        "cross_language_conformance_passed"
+      ]
+    },
+    "gateCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "check",
+        "status",
+        "evidence_refs"
+      ],
+      "properties": {
+        "check": {
+          "$ref": "#/$defs/gateCheckName"
+        },
+        "status": {
+          "enum": [
+            "SATISFIED",
+            "UNSATISFIED"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/refToken"
+          }
+        }
+      }
+    },
+    "implementationGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "assessed_at_logical_time",
+        "checks",
+        "decision_reason",
+        "gate_digest"
+      ],
+      "properties": {
+        "decision": {
+          "const": "BLOCKED"
+        },
+        "assessed_at_logical_time": {
+          "$ref": "#/$defs/safeInteger"
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "$ref": "#/$defs/gateCheck"
+          }
+        },
+        "decision_reason": {
+          "const": "PRODUCERS_NOT_IMPLEMENTED_OR_ADMITTED"
+        },
+        "gate_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    }
+  }
+}

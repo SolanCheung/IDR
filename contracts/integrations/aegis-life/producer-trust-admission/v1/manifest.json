@@ -1,0 +1,51 @@
+{
+  "pack_id": "idr.aegis.producer-trust-admission.conformance.v1",
+  "status": "SPECIFICATION_ONLY",
+  "specification": "docs/integrations/IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md",
+  "schema": "idr-aegis-producer-trust-registry-v1.schema.json",
+  "schema_digest": "sha256:7e271d0635f3d9ef79c04a3cc9af70462f4c091ea73d429eb895d9153812c9a4",
+  "golden": {
+    "id": "SYNTHETIC_PRODUCER_TRUST_REGISTRY_GOLDEN_V1",
+    "path": "fixtures/valid/synthetic-producer-trust-registry-v1.json",
+    "expected_policy_digest": "sha256:5d3dc942c78a2e98148cda2f724870fef1f7d8709abb49f892d6718769f32995",
+    "expected_profile_digests": {
+      "semantic_roles": "sha256:b5e7714309cc58cedd824d6a9d080c9cf7c6385627b5ddec9730aa2225b4e58c",
+      "fast_path_facts": "sha256:92180adc2908a963fee9c122d1d6aef4f021c164447048cab62ea84f7eee1ec9",
+      "decision_facts": "sha256:e296412869331e50c4998d2577a4c6ea7de15eb0c10137f4d9af7383f2ff7197",
+      "coordination_facts": "sha256:14ac032b5a99b517bf1d4152c1c3e885228478154f8f94406dcf8c6df0ca52b3",
+      "host_projection": "sha256:47d020ea6c126837a78caf74f8919b755b0f2fca7c3841b0254f7be5d6fef628"
+    },
+    "expected_gate_digest": "sha256:3cd5b6f5c5e27b80314b46285f241488a1ffa525eee1d2c9cb58ac363f1a3f36",
+    "expected_registry_digest": "sha256:b42a50b98f642874ff8afaab43fb3eea7b7a23d1e29b15fba71fbca839e5952a",
+    "expected_owned_fact_count": 31,
+    "expected_satisfied_gate_count": 1
+  },
+  "negative_cases": [
+    {"id": "TOP_UNKNOWN_FIELD", "mutation": "TOP_UNKNOWN_FIELD", "expected_code": "UNKNOWN_FIELD"},
+    {"id": "DUPLICATE_FAMILY", "mutation": "DUPLICATE_FAMILY", "expected_code": "DUPLICATE_FAMILY"},
+    {"id": "PRODUCER_KIND_MISMATCH", "mutation": "PRODUCER_KIND_MISMATCH", "expected_code": "PRODUCER_KIND_MISMATCH"},
+    {"id": "OWNER_BOUNDARY_MISMATCH", "mutation": "OWNER_BOUNDARY_MISMATCH", "expected_code": "OWNER_BOUNDARY_MISMATCH"},
+    {"id": "MISSING_FACT_OWNERSHIP", "mutation": "MISSING_FACT_OWNERSHIP", "expected_code": "FACT_OWNERSHIP_MISMATCH"},
+    {"id": "CROSS_FAMILY_FACT_OWNERSHIP", "mutation": "CROSS_FAMILY_FACT_OWNERSHIP", "expected_code": "FACT_OWNERSHIP_MISMATCH"},
+    {"id": "DUPLICATE_FACT_OWNERSHIP", "mutation": "DUPLICATE_FACT_OWNERSHIP", "expected_code": "DUPLICATE_FACT_OWNERSHIP"},
+    {"id": "IDR_INPUT_ALLOWED", "mutation": "IDR_INPUT_ALLOWED", "expected_code": "INPUT_POLICY_MISMATCH"},
+    {"id": "SHADOW_FEEDBACK_ALLOWED", "mutation": "SHADOW_FEEDBACK_ALLOWED", "expected_code": "INPUT_POLICY_MISMATCH"},
+    {"id": "RAW_CONTENT_ACCESS_WIDENED", "mutation": "RAW_CONTENT_ACCESS_WIDENED", "expected_code": "RAW_CONTENT_POLICY_MISMATCH"},
+    {"id": "RAW_CONTENT_PERSISTENCE", "mutation": "RAW_CONTENT_PERSISTENCE", "expected_code": "RAW_CONTENT_POLICY_MISMATCH"},
+    {"id": "JOURNAL_READ_ALLOWED", "mutation": "JOURNAL_READ_ALLOWED", "expected_code": "INPUT_POLICY_MISMATCH"},
+    {"id": "FAIL_OPEN", "mutation": "FAIL_OPEN", "expected_code": "RESPONSIBILITY_MISMATCH"},
+    {"id": "RECEIPT_BINDING_WEAKENED", "mutation": "RECEIPT_BINDING_WEAKENED", "expected_code": "RESPONSIBILITY_MISMATCH"},
+    {"id": "IDR_OUTPUT_USED", "mutation": "IDR_OUTPUT_USED", "expected_code": "CIRCULAR_DERIVATION"},
+    {"id": "DOWNSTREAM_FEEDBACK_USED", "mutation": "DOWNSTREAM_FEEDBACK_USED", "expected_code": "CIRCULAR_DERIVATION"},
+    {"id": "ADMITTED_WITHOUT_PACKET", "mutation": "ADMITTED_WITHOUT_PACKET", "expected_code": "TRUST_STATE_NOT_ALLOWED"},
+    {"id": "MISSING_REQUIRED_PROOF", "mutation": "MISSING_REQUIRED_PROOF", "expected_code": "REQUIRED_PROOFS_MISMATCH"},
+    {"id": "POLICY_DIGEST_SUBSTITUTION", "mutation": "POLICY_DIGEST_SUBSTITUTION", "expected_code": "POLICY_DIGEST_MISMATCH"},
+    {"id": "PROFILE_DIGEST_SUBSTITUTION", "mutation": "PROFILE_DIGEST_SUBSTITUTION", "expected_code": "PROFILE_DIGEST_MISMATCH"},
+    {"id": "SOURCE_PIN_DRIFT", "mutation": "SOURCE_PIN_DRIFT", "expected_code": "SOURCE_REVIEW_PIN_MISMATCH"},
+    {"id": "MISSING_GATE_CHECK", "mutation": "MISSING_GATE_CHECK", "expected_code": "GATE_CHECKS_MISMATCH"},
+    {"id": "UNSATISFIED_WITH_EVIDENCE", "mutation": "UNSATISFIED_WITH_EVIDENCE", "expected_code": "GATE_EVIDENCE_MISMATCH"},
+    {"id": "GATE_FALSE_READY", "mutation": "GATE_FALSE_READY", "expected_code": "IMPLEMENTATION_GATE_BLOCKED"},
+    {"id": "GATE_DIGEST_SUBSTITUTION", "mutation": "GATE_DIGEST_SUBSTITUTION", "expected_code": "GATE_DIGEST_MISMATCH"},
+    {"id": "REGISTRY_DIGEST_SUBSTITUTION", "mutation": "REGISTRY_DIGEST_SUBSTITUTION", "expected_code": "REGISTRY_DIGEST_MISMATCH"}
+  ]
+}

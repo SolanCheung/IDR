@@ -203,7 +203,7 @@ derivability are insufficient without exact source semantics and lineage.
 
 | Gate | Finding | Result |
 | --- | --- | --- |
-| Source owner and schema | `AegisStructuredObservationV1` is now specified, but no Aegis source owner or producer implements it | Specified, not implemented |
+| Source owner and schema | `AegisStructuredObservationV1` and five producer responsibility profiles are specified, but no Aegis source owner or producer implements them | Specified, not implemented |
 | Export approval | No verified approval object allowing representative offline export | Blocked |
 | Consent or lawful basis | Coordination consent types are unrelated to corpus export | Blocked |
 | Provenance and lineage | No product receipt-to-IDR-candidate lineage digest | Blocked |
@@ -238,12 +238,15 @@ following are separately approved:
 10. A new security/privacy audit proving failure isolation, least privilege,
     bounded volume, secret exclusion, and no product-path dependency.
 
-Follow-on specification work now defines item 1's object shape and the pure
-42-leaf mapping in
+Follow-on specification work defines item 1's object shape and the pure 42-leaf
+mapping in
 [`IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md`](IDR-AEGIS-STRUCTURED-OBSERVATION-SPEC.md).
-It also defines the required binding shape for item 2. No reviewed Aegis
-producer implements either requirement, so this source review's exporter and
-real-data decisions remain unchanged.
+Item 2's five producer responsibilities, typed-input allowlists, proof
+requirements, and fail-closed implementation gate are defined in
+[`IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md`](IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md).
+All five profiles remain `NOT_IMPLEMENTED`. No reviewed Aegis producer
+implements either requirement, so this source review's exporter and real-data
+decisions remain unchanged.
 
 Satisfying this list would authorize a new implementation review, not the
 export itself. It must not modify the frozen IDR V1.3 adapter or silently turn
@@ -254,6 +257,7 @@ the current shadow validator into a product component.
 ```text
 SOURCE_DATA_FLOW_REVIEW = COMPLETE
 VERSIONED_STRUCTURED_SOURCE_SCHEMA = SPECIFIED_NOT_IMPLEMENTED
+AUTHORITATIVE_FACT_PRODUCERS = RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED
 REPRESENTATIVE_EXPORTER = BLOCKED
 REAL_AEGIS_DATA_ACCESS = NOT AUTHORIZED
 PASSIVE_CAPTURE = NOT AUTHORIZED

@@ -317,11 +317,16 @@ FACT_PRODUCER_BINDING_SHAPE = SPECIFIED
 
 It does not establish that any producer exists or is authoritative.
 
+Producer ownership, typed-input allowlists, prohibited feedback sources, proof
+requirements, and the implementation gate are defined separately by
+[`IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md`](IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md).
+That specification also does not implement or admit a producer.
+
 ## Remaining blockers
 
 ```text
 AEGIS_STRUCTURED_OBSERVATION_PRODUCER = NOT IMPLEMENTED
-AUTHORITATIVE_FACT_PRODUCERS = NOT APPROVED
+AUTHORITATIVE_FACT_PRODUCERS = RESPONSIBILITIES SPECIFIED / NOT IMPLEMENTED
 SOURCE_SPECIFIC_EXPORT_APPROVAL = UNRESOLVED
 CONSENT_OR_LAWFUL_BASIS = UNRESOLVED
 TRUSTED_EXPORT_AND_VERIFICATION_CLOCK = UNRESOLVED

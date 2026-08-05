@@ -277,7 +277,7 @@
     },
     {
       "gate": "AUTHORITATIVE_FACT_PRODUCERS",
-      "status": "UNRESOLVED"
+      "status": "RESPONSIBILITIES_SPECIFIED_NOT_IMPLEMENTED"
     },
     {
       "gate": "SOURCE_SPECIFIC_EXPORT_APPROVAL",

@@ -34,3 +34,5 @@ The source review is complete, but the representative exporter remains
 `BLOCKED`; only `synthetic_control` is authorized.
 The separate structured-observation pack defines the missing source wire shape,
 but its producer remains unimplemented and unauthorized.
+The producer-trust pack defines exact ownership and implementation gates for
+all five producer families, but all five remain `NOT_IMPLEMENTED`.

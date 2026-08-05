@@ -136,6 +136,12 @@ digest sealing, and a pure 42-leaf Shadow projection. Its conformance input is
 synthetic and there is no Aegis producer implementation, so it also does not
 close Gate A.
 
+The separate
+[`IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md`](IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md)
+locks the five responsibility profiles and their implementation gate. All five
+profiles remain `NOT_IMPLEMENTED`, so that specification also does not close
+Gate A.
+
 ### Gate B — Passive capture
 
 Requires a separate review. Capture MUST remain asynchronous and non-blocking,

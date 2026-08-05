@@ -70,3 +70,10 @@ conformance artifacts under
 `contracts/integrations/aegis-life/structured-observation/v1/`. This resolves a
 wire-design gap only. It does not add an Aegis producer or change the blocked
 export decision.
+
+The five producer responsibility profiles and their fail-closed implementation
+gate are defined in
+`docs/integrations/IDR-AEGIS-PRODUCER-TRUST-ADMISSION-SPEC.md`, with synthetic
+conformance artifacts under
+`contracts/integrations/aegis-life/producer-trust-admission/v1/`. All producer
+states remain `NOT_IMPLEMENTED`; this is not implementation or admission.
