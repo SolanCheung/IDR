@@ -1,0 +1,4 @@
+/target/
+/packages/idr-client/node_modules/
+**/__pycache__/
+*.pyc
