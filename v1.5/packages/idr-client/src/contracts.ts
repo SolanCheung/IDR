@@ -81,6 +81,7 @@ export type ResolveRequestV1 = {
 export type DecisionContractV1 = {
   schema_version: typeof SCHEMA_VERSION_V1;
   decision_id: string;
+  decision_digest: string;
   request_id: string;
   resolved_intent: string;
   intent_confidence: number;
@@ -112,9 +113,17 @@ export type HostModelResultV1 = {
   confidence: number;
 };
 
+export type UnresolvedResultV1 = {
+  request_id: string;
+  resolved_intent: string | null;
+  reason: "unsupported_action" | "model_inference_unavailable";
+  reason_codes: string[];
+};
+
 export type ResolveOutcomeV1 =
   | { type: "decision"; decision: DecisionContractV1 }
-  | { type: "model_inference_required"; model_request: HostModelRequestV1 };
+  | { type: "model_inference_required"; model_request: HostModelRequestV1 }
+  | { type: "unresolved"; unresolved: UnresolvedResultV1 };
 
 export type ContinueResolveRequestV1 = {
   original_request: ResolveRequestV1;
@@ -123,6 +132,7 @@ export type ContinueResolveRequestV1 = {
 
 export type OutcomeFeedbackV1 = {
   decision_id: string;
+  decision_digest: string;
   recommended_action: ActionV1;
   actual_action: ActionV1;
   user_response: "accepted" | "rejected" | "corrected" | "ignored";
@@ -155,4 +165,3 @@ export type FeedbackResultV1 = {
   assertions_updated: string[];
   evaluation_record: EvaluationRecordV1;
 };
-

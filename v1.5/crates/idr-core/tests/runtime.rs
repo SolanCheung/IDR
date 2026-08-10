@@ -55,6 +55,7 @@ fn decision(outcome: ResolveOutcomeV1) -> DecisionContractV1 {
     match outcome {
         ResolveOutcomeV1::Decision { decision } => *decision,
         ResolveOutcomeV1::ModelInferenceRequired { .. } => panic!("expected decision"),
+        ResolveOutcomeV1::Unresolved { .. } => panic!("expected decision"),
     }
 }
 
@@ -66,6 +67,7 @@ fn successful_feedback(
 ) -> OutcomeFeedbackV1 {
     OutcomeFeedbackV1 {
         decision_id: decision.decision_id.clone(),
+        decision_digest: decision.decision_digest.clone(),
         recommended_action: decision.recommended_action.clone(),
         actual_action,
         user_response: response,
@@ -77,6 +79,26 @@ fn successful_feedback(
         scope: scope("software_development"),
         observed_at: "2026-01-11T00:00:00Z".into(),
     }
+}
+
+#[test]
+fn unsupported_intent_fails_closed_without_action_fallback() {
+    let mut core = IdrCore::new();
+    let result = core
+        .resolve(request("req-unsupported", vec![intent("delete", 0.95)]))
+        .expect("resolution should return a structured outcome");
+
+    assert!(matches!(
+        result,
+        ResolveOutcomeV1::Unresolved {
+            unresolved: UnresolvedResultV1 {
+                resolved_intent: Some(intent),
+                reason: UnresolvedReasonV1::UnsupportedAction,
+                ..
+            }
+        } if intent == "delete"
+    ));
+    assert!(core.evaluation_records().is_empty());
 }
 
 #[test]
@@ -122,6 +144,26 @@ fn ambiguous_intent_requests_disambiguation() {
         ResolveOutcomeV1::ModelInferenceRequired {
             model_request: HostModelRequestV1 {
                 purpose: HostModelPurposeV1::IntentDisambiguation,
+                ..
+            }
+        }
+    ));
+}
+
+#[test]
+fn disabled_model_inference_returns_unresolved_without_model_request() {
+    let mut input = request("req-model-disabled", Vec::new());
+    input.host_capabilities.model_inference = false;
+    let mut core = IdrCore::new();
+    let result = core
+        .resolve(input)
+        .expect("resolution should return a structured outcome");
+
+    assert!(matches!(
+        result,
+        ResolveOutcomeV1::Unresolved {
+            unresolved: UnresolvedResultV1 {
+                reason: UnresolvedReasonV1::ModelInferenceUnavailable,
                 ..
             }
         }
@@ -210,6 +252,49 @@ fn structured_host_result_is_validated() {
         })
         .expect_err("mismatched result must fail");
     assert!(matches!(error, IdrError::InvalidContract(_)));
+}
+
+#[test]
+fn host_model_result_actions_must_match_host_capabilities() {
+    let mut core = IdrCore::new();
+    let original_request = request("req-capabilities", Vec::new());
+    let unsupported_recommendation = core
+        .continue_resolve(ContinueResolveRequestV1 {
+            original_request: original_request.clone(),
+            model_result: HostModelResultV1 {
+                request_id: original_request.request_id.clone(),
+                resolved_intent: "delete".into(),
+                recommended_action: ActionV1::new("delete"),
+                alternatives: Vec::new(),
+                constraints: Vec::new(),
+                ambiguities: Vec::new(),
+                confidence: 0.9,
+            },
+        })
+        .expect_err("unsupported recommendation must be rejected");
+    assert!(matches!(
+        unsupported_recommendation,
+        IdrError::CapabilityViolation(_)
+    ));
+
+    let unsupported_alternative = core
+        .continue_resolve(ContinueResolveRequestV1 {
+            original_request: original_request.clone(),
+            model_result: HostModelResultV1 {
+                request_id: original_request.request_id,
+                resolved_intent: "deploy".into(),
+                recommended_action: ActionV1::new("deploy"),
+                alternatives: vec![ActionV1::new("delete")],
+                constraints: Vec::new(),
+                ambiguities: Vec::new(),
+                confidence: 0.9,
+            },
+        })
+        .expect_err("unsupported alternative must be rejected");
+    assert!(matches!(
+        unsupported_alternative,
+        IdrError::CapabilityViolation(_)
+    ));
 }
 
 #[test]
@@ -421,6 +506,54 @@ fn corrected_feedback_creates_override_and_changes_next_decision() {
     assert!(second
         .reason_codes
         .contains(&"human_model_preference_applied".into()));
+}
+
+#[test]
+fn tampered_feedback_cannot_update_human_model() {
+    let mut core = IdrCore::new();
+    let resolved = decision(
+        core.resolve(request("req-feedback-binding", vec![intent("deploy", 0.95)]))
+            .expect("resolve"),
+    );
+    let valid = successful_feedback(
+        &resolved,
+        UserResponseV1::Corrected,
+        ActionV1::new("manual_review"),
+        Some(CorrectionV1 {
+            corrected_intent: None,
+            preferred_action: Some(ActionV1::new("manual_review")),
+        }),
+    );
+    let evidence_before = core.evidence().len();
+    let assertions_before = core.assertions().len();
+
+    let mut wrong_action = valid.clone();
+    wrong_action.recommended_action = ActionV1::new("manual_review");
+    assert!(matches!(
+        core.feedback(wrong_action),
+        Err(IdrError::InvalidContract(_))
+    ));
+
+    let mut wrong_scope = valid.clone();
+    wrong_scope.scope = scope("industrial_design");
+    assert!(matches!(
+        core.feedback(wrong_scope),
+        Err(IdrError::InvalidContract(_))
+    ));
+
+    let mut wrong_digest = valid;
+    wrong_digest.decision_digest = "0".repeat(64);
+    assert!(matches!(
+        core.feedback(wrong_digest),
+        Err(IdrError::InvalidContract(_))
+    ));
+
+    assert_eq!(core.evidence().len(), evidence_before);
+    assert_eq!(core.assertions().len(), assertions_before);
+    assert_eq!(
+        core.evaluation_records()[0].outcome_status,
+        EvaluationOutcomeStatusV1::Pending
+    );
 }
 
 #[test]

@@ -40,7 +40,10 @@ fn resolve_request(request_id: &str, with_intent: bool) -> ResolveRequestV1 {
         human_model_refs: Vec::new(),
         human_model_snapshot: Vec::new(),
         evidence: Vec::new(),
-        host_capabilities: HostCapabilitiesV1::default(),
+        host_capabilities: HostCapabilitiesV1 {
+            model_inference: true,
+            supported_actions: vec!["deploy".into(), "manual_review".into()],
+        },
     }
 }
 
@@ -89,6 +92,7 @@ async fn resolve_model_continue_returns_decision() {
     let model_request = match first {
         ResolveOutcomeV1::ModelInferenceRequired { model_request } => model_request,
         ResolveOutcomeV1::Decision { .. } => panic!("expected model request"),
+        ResolveOutcomeV1::Unresolved { .. } => panic!("expected model request"),
     };
     let continuation = ContinueResolveRequestV1 {
         original_request: original,
@@ -108,6 +112,7 @@ async fn resolve_model_continue_returns_decision() {
     let continued = match second {
         ResolveOutcomeV1::Decision { decision } => decision,
         ResolveOutcomeV1::ModelInferenceRequired { .. } => panic!("expected decision"),
+        ResolveOutcomeV1::Unresolved { .. } => panic!("expected decision"),
     };
     assert_eq!(continued.model_usage, ModelUsageV1::HostDelegated);
 }
@@ -120,9 +125,11 @@ async fn feedback_updates_human_model_endpoint() {
     let decision = match resolved {
         ResolveOutcomeV1::Decision { decision } => decision,
         ResolveOutcomeV1::ModelInferenceRequired { .. } => panic!("expected decision"),
+        ResolveOutcomeV1::Unresolved { .. } => panic!("expected decision"),
     };
     let feedback = OutcomeFeedbackV1 {
         decision_id: decision.decision_id.clone(),
+        decision_digest: decision.decision_digest.clone(),
         recommended_action: decision.recommended_action,
         actual_action: ActionV1::new("manual_review"),
         user_response: UserResponseV1::Corrected,

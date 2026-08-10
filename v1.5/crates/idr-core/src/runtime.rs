@@ -1,6 +1,7 @@
 use crate::*;
 use crate::learning::assertion_applies;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -10,6 +11,7 @@ const AMBIGUITY_DELTA: f64 = 0.08;
 #[derive(Clone, Debug)]
 pub(crate) struct StoredDecision {
     pub subject_ref: String,
+    pub scope: ScopeV1,
     pub decision: DecisionContractV1,
 }
 
@@ -36,6 +38,14 @@ impl IdrCore {
         validate_resolve_request(&request)?;
         match resolve_intent(&request) {
             IntentResolution::Resolved(candidate) => {
+                if !action_is_supported(&request, &candidate.intent) {
+                    return Ok(unresolved_result(
+                        &request,
+                        Some(candidate.intent.clone()),
+                        UnresolvedReasonV1::UnsupportedAction,
+                        "resolved_intent_not_supported_by_host",
+                    ));
+                }
                 let model_usage = if candidate.source == IntentSourceV1::HostModel {
                     ModelUsageV1::HostSupplied
                 } else {
@@ -45,7 +55,7 @@ impl IdrCore {
                     &request,
                     candidate.intent.clone(),
                     candidate.confidence,
-                    default_action(&request, &candidate.intent),
+                    ActionV1::new(&candidate.intent),
                     Vec::new(),
                     candidate.constraints.clone(),
                     Vec::new(),
@@ -57,9 +67,18 @@ impl IdrCore {
                 })
             }
             IntentResolution::NeedsModel(purpose) => {
-                Ok(ResolveOutcomeV1::ModelInferenceRequired {
-                    model_request: host_model_request(&request, purpose),
-                })
+                if request.host_capabilities.model_inference {
+                    Ok(ResolveOutcomeV1::ModelInferenceRequired {
+                        model_request: host_model_request(&request, purpose),
+                    })
+                } else {
+                    Ok(unresolved_result(
+                        &request,
+                        None,
+                        UnresolvedReasonV1::ModelInferenceUnavailable,
+                        "host_model_inference_disabled",
+                    ))
+                }
             }
         }
     }
@@ -69,10 +88,7 @@ impl IdrCore {
         continuation: ContinueResolveRequestV1,
     ) -> Result<DecisionContractV1, IdrError> {
         validate_resolve_request(&continuation.original_request)?;
-        validate_model_result(
-            &continuation.original_request.request_id,
-            &continuation.model_result,
-        )?;
+        validate_model_result(&continuation.original_request, &continuation.model_result)?;
 
         let clarification_required = matches!(
             resolve_intent(&continuation.original_request),
@@ -109,6 +125,9 @@ impl IdrCore {
                     model_result,
                 })
             }
+            ResolveOutcomeV1::Unresolved { unresolved } => Err(IdrError::Unresolved(
+                unresolved.reason_codes.join(","),
+            )),
         }
     }
 
@@ -179,12 +198,7 @@ impl IdrCore {
                 Ok(action) => action,
                 Err(_) => ActionV1::new(assertion.value.as_str()?),
             };
-            if request.host_capabilities.supported_actions.is_empty()
-                || request
-                    .host_capabilities
-                    .supported_actions
-                    .contains(&action.action)
-            {
+            if action_is_supported(request, &action.action) {
                 Some((action, assertion))
             } else {
                 None
@@ -226,9 +240,10 @@ impl IdrCore {
         }
 
         let decision_id = self.next_id("decision");
-        let decision = DecisionContractV1 {
+        let mut decision = DecisionContractV1 {
             schema_version: SCHEMA_VERSION_V1.to_owned(),
             decision_id: decision_id.clone(),
+            decision_digest: String::new(),
             request_id: request.request_id.clone(),
             resolved_intent,
             intent_confidence,
@@ -243,11 +258,17 @@ impl IdrCore {
                 .clamp(0.0, 1.0),
             model_usage: model_usage.clone(),
         };
+        decision.decision_digest = decision_digest(
+            &request.subject_ref,
+            &request.context.scope,
+            &decision,
+        );
 
         self.decisions.insert(
             decision_id.clone(),
             StoredDecision {
                 subject_ref: request.subject_ref.clone(),
+                scope: request.context.scope.clone(),
                 decision: decision.clone(),
             },
         );
@@ -282,17 +303,27 @@ fn source_rank(source: &AssertionSourceTypeV1) -> u8 {
     }
 }
 
-fn default_action(request: &ResolveRequestV1, intent: &str) -> ActionV1 {
-    if request.host_capabilities.supported_actions.is_empty()
-        || request
-            .host_capabilities
-            .supported_actions
-            .iter()
-            .any(|action| action == intent)
-    {
-        ActionV1::new(intent)
-    } else {
-        ActionV1::new(request.host_capabilities.supported_actions[0].clone())
+fn action_is_supported(request: &ResolveRequestV1, action: &str) -> bool {
+    request
+        .host_capabilities
+        .supported_actions
+        .iter()
+        .any(|supported| supported == action)
+}
+
+fn unresolved_result(
+    request: &ResolveRequestV1,
+    resolved_intent: Option<String>,
+    reason: UnresolvedReasonV1,
+    reason_code: &str,
+) -> ResolveOutcomeV1 {
+    ResolveOutcomeV1::Unresolved {
+        unresolved: UnresolvedResultV1 {
+            request_id: request.request_id.clone(),
+            resolved_intent,
+            reason,
+            reason_codes: vec![reason_code.into()],
+        },
     }
 }
 
@@ -360,14 +391,29 @@ fn validate_resolve_request(request: &ResolveRequestV1) -> Result<(), IdrError> 
             ));
         }
     }
+    if request
+        .host_capabilities
+        .supported_actions
+        .iter()
+        .any(|action| action.trim().is_empty())
+    {
+        return Err(IdrError::InvalidContract(
+            "supported action names must not be empty".into(),
+        ));
+    }
     Ok(())
 }
 
 fn validate_model_result(
-    request_id: &str,
+    request: &ResolveRequestV1,
     result: &HostModelResultV1,
 ) -> Result<(), IdrError> {
-    if result.request_id != request_id {
+    if !request.host_capabilities.model_inference {
+        return Err(IdrError::CapabilityViolation(
+            "host model inference is disabled for this request".into(),
+        ));
+    }
+    if result.request_id != request.request_id {
         return Err(IdrError::InvalidContract(
             "host model result request_id mismatch".into(),
         ));
@@ -381,7 +427,35 @@ fn validate_model_result(
             "host model result is invalid".into(),
         ));
     }
+    if !action_is_supported(request, &result.recommended_action.action) {
+        return Err(IdrError::CapabilityViolation(format!(
+            "host model recommended unsupported action: {}",
+            result.recommended_action.action
+        )));
+    }
+    if let Some(alternative) = result
+        .alternatives
+        .iter()
+        .find(|alternative| !action_is_supported(request, &alternative.action))
+    {
+        return Err(IdrError::CapabilityViolation(format!(
+            "host model returned unsupported alternative: {}",
+            alternative.action
+        )));
+    }
     Ok(())
+}
+
+fn decision_digest(
+    subject_ref: &str,
+    scope: &ScopeV1,
+    decision: &DecisionContractV1,
+) -> String {
+    let mut bound_decision = decision.clone();
+    bound_decision.decision_digest.clear();
+    let encoded = serde_json::to_vec(&(subject_ref, scope, bound_decision))
+        .expect("decision binding must be serializable");
+    format!("{:x}", Sha256::digest(encoded))
 }
 
 fn append_unique<T: PartialEq>(target: &mut Vec<T>, values: Vec<T>) {

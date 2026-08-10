@@ -4,9 +4,10 @@
   "title": "OutcomeFeedbackV1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision_id", "recommended_action", "actual_action", "user_response", "outcome", "correction", "scope", "observed_at"],
+  "required": ["decision_id", "decision_digest", "recommended_action", "actual_action", "user_response", "outcome", "correction", "scope", "observed_at"],
   "properties": {
     "decision_id": { "type": "string", "minLength": 1 },
+    "decision_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "recommended_action": { "$ref": "action.schema.json" },
     "actual_action": { "$ref": "action.schema.json" },
     "user_response": { "enum": ["accepted", "rejected", "corrected", "ignored"] },
@@ -31,4 +32,3 @@
     "observed_at": { "type": "string" }
   }
 }
-

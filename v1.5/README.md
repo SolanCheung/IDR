@@ -13,6 +13,7 @@ Host Agent
   -> idr-core
        -> DecisionContractV1
        OR HostModelRequestV1
+       OR UnresolvedResultV1 (fail closed)
   -> host's existing LLM (when requested)
   -> HostModelResultV1
   -> continue_resolve
@@ -48,7 +49,10 @@ reference store; durable storage is a future host adapter boundary.
 In-process Rust hosts implement `HostModelProvider`. `resolve_with_provider`
 only calls the provider if normal resolution returns
 `model_inference_required`, and it validates the structured result before
-continuing.
+continuing. Recommended actions and alternatives must be declared in the
+request's `supported_actions`; IDR never substitutes an arbitrary fallback.
+When model inference is disabled, requests that require it return a structured
+`unresolved` result instead of an unusable model request.
 
 Language-neutral hosts use:
 
@@ -73,8 +77,9 @@ The optional `idr-http` crate contains no decision or learning rules.
 - Contradictions lower prior confidence, close prior valid time, preserve
   history, and record `supersedes`/`contradicts` relations.
 - Inferred evidence cannot supersede an explicit assertion.
-- Feedback updates only the subject's model and evaluation records. It never
-  changes global policy or model weights online.
+- Feedback must match the original recommendation, exact scope, and SHA-256
+  decision digest before it can update the subject's model or evaluation
+  records. It never changes global policy or model weights online.
 
 ## Evaluation
 
@@ -99,4 +104,3 @@ npm run typecheck
 
 python -m unittest discover -s v1.5/research/evaluation/tests -v
 ```
-

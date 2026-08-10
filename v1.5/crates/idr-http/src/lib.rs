@@ -76,6 +76,9 @@ impl IntoResponse for ApiError {
         let status = match self.0 {
             IdrError::UnknownDecision(_) => StatusCode::NOT_FOUND,
             IdrError::InvalidContract(_) | IdrError::HostModel(_) => StatusCode::BAD_REQUEST,
+            IdrError::CapabilityViolation(_) | IdrError::Unresolved(_) => {
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
         };
         (status, Json(json!({ "error": self.0.to_string() }))).into_response()
     }

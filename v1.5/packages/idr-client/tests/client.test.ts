@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   IdrClient,
+  IdrUnresolvedError,
   resolveWithHostModel,
   SCHEMA_VERSION_V1,
   type DecisionContractV1,
@@ -30,6 +31,7 @@ const input: ResolveRequestV1 = {
 const decision: DecisionContractV1 = {
   schema_version: SCHEMA_VERSION_V1,
   decision_id: "decision-1",
+  decision_digest: "a".repeat(64),
   request_id: input.request_id,
   resolved_intent: "deploy",
   intent_confidence: 0.9,
@@ -99,6 +101,31 @@ test("does not call host model when IDR already has a decision", async () => {
   assert.equal(resolved.decision_id, "decision-1");
 });
 
+test("does not call host model for a fail-closed unresolved result", async () => {
+  const client = new IdrClient("https://idr.test", async () =>
+    Response.json({
+      type: "unresolved",
+      unresolved: {
+        request_id: input.request_id,
+        resolved_intent: null,
+        reason: "model_inference_unavailable",
+        reason_codes: ["host_model_inference_disabled"],
+      },
+    }),
+  );
+  let modelCalls = 0;
+  await assert.rejects(
+    resolveWithHostModel(client, input, {
+      async infer(): Promise<HostModelResultV1> {
+        modelCalls += 1;
+        throw new Error("unexpected model call");
+      },
+    }),
+    IdrUnresolvedError,
+  );
+  assert.equal(modelCalls, 0);
+});
+
 test("feedback uses the standalone endpoint", async () => {
   let path = "";
   const client = new IdrClient("https://idr.test", async (url) => {
@@ -121,6 +148,7 @@ test("feedback uses the standalone endpoint", async () => {
   });
   await client.feedback({
     decision_id: "decision-1",
+    decision_digest: decision.decision_digest,
     recommended_action: { action: "deploy", parameters: {} },
     actual_action: { action: "deploy", parameters: {} },
     user_response: "accepted",
@@ -131,4 +159,3 @@ test("feedback uses the standalone endpoint", async () => {
   });
   assert.equal(path, "/v1/feedback");
 });
-

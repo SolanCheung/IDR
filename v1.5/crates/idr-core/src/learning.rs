@@ -70,6 +70,7 @@ impl IdrCore {
             .get(&feedback.decision_id)
             .cloned()
             .ok_or_else(|| IdrError::UnknownDecision(feedback.decision_id.clone()))?;
+        validate_feedback_binding(&stored, &feedback)?;
         let mut emitted_evidence = Vec::new();
         let mut assertions_updated = Vec::new();
 
@@ -305,6 +306,28 @@ impl IdrCore {
             );
         }
     }
+}
+
+fn validate_feedback_binding(
+    stored: &crate::runtime::StoredDecision,
+    feedback: &OutcomeFeedbackV1,
+) -> Result<(), IdrError> {
+    if feedback.decision_digest != stored.decision.decision_digest {
+        return Err(IdrError::InvalidContract(
+            "feedback decision_digest mismatch".into(),
+        ));
+    }
+    if feedback.recommended_action != stored.decision.recommended_action {
+        return Err(IdrError::InvalidContract(
+            "feedback recommended_action does not match the decision".into(),
+        ));
+    }
+    if feedback.scope != stored.scope {
+        return Err(IdrError::InvalidContract(
+            "feedback scope does not match the decision scope".into(),
+        ));
+    }
+    Ok(())
 }
 
 pub(crate) fn assertion_applies(

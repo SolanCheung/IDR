@@ -8,6 +8,10 @@ pub enum IdrError {
     UnknownDecision(String),
     #[error("host model provider failed: {0}")]
     HostModel(String),
+    #[error("host capability violation: {0}")]
+    CapabilityViolation(String),
+    #[error("resolution failed closed: {0}")]
+    Unresolved(String),
 }
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -23,4 +27,3 @@ impl HostModelProviderError {
         }
     }
 }
-
