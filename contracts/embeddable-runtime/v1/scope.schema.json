@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/scope.schema.json",
+  "title": "ScopeV1",
+  "type": "object",
+  "additionalProperties": { "type": ["string", "number", "boolean"] }
+}
+

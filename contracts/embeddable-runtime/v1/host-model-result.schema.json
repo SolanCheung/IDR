@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/host-model-result.schema.json",
+  "title": "HostModelResultV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "resolved_intent", "recommended_action", "alternatives", "constraints", "ambiguities", "confidence"],
+  "properties": {
+    "request_id": { "type": "string", "minLength": 1 },
+    "resolved_intent": { "type": "string", "minLength": 1 },
+    "recommended_action": { "$ref": "action.schema.json" },
+    "alternatives": { "type": "array", "items": { "$ref": "action.schema.json" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "ambiguities": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}
+

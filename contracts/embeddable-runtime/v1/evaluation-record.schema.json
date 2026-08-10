@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/evaluation-record.schema.json",
+  "title": "EvaluationRecordV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_id", "intent_corrected", "decision_overridden", "clarification_required", "model_inference_used", "human_model_assertion_refs", "evidence_refs", "outcome_status", "resolved_at"],
+  "properties": {
+    "decision_id": { "type": "string", "minLength": 1 },
+    "intent_corrected": { "type": "boolean" },
+    "decision_overridden": { "type": "boolean" },
+    "clarification_required": { "type": "boolean" },
+    "model_inference_used": { "type": "boolean" },
+    "human_model_assertion_refs": { "type": "array", "items": { "type": "string" } },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "outcome_status": { "enum": ["pending", "success", "failure", "partial", "unknown"] },
+    "resolved_at": { "type": "string" }
+  }
+}

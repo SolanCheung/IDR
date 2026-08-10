@@ -1,29 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "idr.embeddable.decision-contract.v1",
-  "title": "IDR Embeddable Decision Contract V1",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/decision-contract.schema.json",
+  "title": "DecisionContractV1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "intent", "decision", "confidence"],
+  "required": ["schema_version", "decision_id", "request_id", "resolved_intent", "intent_confidence", "recommended_action", "alternatives", "constraints", "ambiguities", "human_model_basis", "evidence_basis", "reason_codes", "decision_confidence", "model_usage"],
   "properties": {
-    "schema_version": {"const": 1},
-    "intent": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["name", "confidence"],
-      "properties": {
-        "name": {"type": "string"},
-        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
-      }
-    },
-    "decision": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["recommended_action"],
-      "properties": {
-        "recommended_action": {"type": "string"}
-      }
-    },
-    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+    "schema_version": { "const": "1.0" },
+    "decision_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": "string", "minLength": 1 },
+    "resolved_intent": { "type": "string", "minLength": 1 },
+    "intent_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "recommended_action": { "$ref": "action.schema.json" },
+    "alternatives": { "type": "array", "items": { "$ref": "action.schema.json" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "ambiguities": { "type": "array", "items": { "type": "string" } },
+    "human_model_basis": { "type": "array", "items": { "type": "string" } },
+    "evidence_basis": { "type": "array", "items": { "type": "string" } },
+    "reason_codes": { "type": "array", "items": { "type": "string" } },
+    "decision_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "model_usage": { "enum": ["not_required", "host_supplied", "host_delegated"] }
   }
 }
+

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/action.schema.json",
+  "title": "ActionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "parameters"],
+  "properties": {
+    "action": { "type": "string", "minLength": 1 },
+    "parameters": {}
+  }
+}
+
