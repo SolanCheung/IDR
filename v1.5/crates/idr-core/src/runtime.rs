@@ -15,11 +15,18 @@ pub(crate) struct StoredDecision {
     pub decision: DecisionContractV1,
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct AppliedFeedback {
+    pub feedback_digest: String,
+    pub result: FeedbackResultV1,
+}
+
 #[derive(Debug, Default)]
 pub struct IdrCore {
     pub(crate) assertions: Vec<HumanModelAssertionV1>,
     pub(crate) evidence: Vec<EvidenceV1>,
     pub(crate) decisions: HashMap<String, StoredDecision>,
+    pub(crate) feedback_ledger: HashMap<String, AppliedFeedback>,
     pub(crate) evaluations: Vec<EvaluationRecordV1>,
     pub(crate) next_sequence: u64,
 }
@@ -205,12 +212,27 @@ impl IdrCore {
             }
         });
 
-        let (recommended_action, human_model_basis, human_model_confidence) =
-            if let Some((action, assertion)) = learned_action {
-                (action, vec![assertion.assertion_id.clone()], assertion.confidence)
+        let has_current_constraints = request
+            .context
+            .current_constraints
+            .iter()
+            .any(|constraint| !constraint.trim().is_empty());
+        let (
+            recommended_action,
+            human_model_basis,
+            human_model_confidence,
+            human_model_preference_applied,
+            human_model_preference_blocked,
+        ) = if let Some((action, assertion)) = learned_action {
+            let basis = vec![assertion.assertion_id.clone()];
+            if has_current_constraints && action != base_action {
+                (base_action, basis, intent_confidence, false, true)
             } else {
-                (base_action, Vec::new(), intent_confidence)
-            };
+                (action, basis, assertion.confidence, true, false)
+            }
+        } else {
+            (base_action, Vec::new(), intent_confidence, false, false)
+        };
 
         let mut constraints = request.context.current_constraints.clone();
         append_unique(&mut constraints, additional_constraints);
@@ -229,10 +251,13 @@ impl IdrCore {
             ModelUsageV1::HostSupplied => reason_codes.push("host_supplied_intent".into()),
             ModelUsageV1::HostDelegated => reason_codes.push("host_model_result_validated".into()),
         }
-        if !human_model_basis.is_empty() {
+        if human_model_preference_applied {
             reason_codes.push("human_model_preference_applied".into());
         }
-        if !request.context.current_constraints.is_empty() {
+        if human_model_preference_blocked {
+            reason_codes.push("human_model_preference_blocked_by_current_constraint".into());
+        }
+        if has_current_constraints {
             reason_codes.push("current_constraints_prioritized".into());
         }
         if !ambiguities.is_empty() {

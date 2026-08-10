@@ -444,22 +444,184 @@ fn expired_snapshot_does_not_affect_decision() {
 }
 
 #[test]
-fn feedback_accepted_accumulates_evidence_and_activates_pattern() {
+fn current_constraint_blocks_conflicting_historical_preference() {
+    let mut core = IdrCore::new();
+    let preference = core
+        .observe(ObservationV1 {
+            evidence_id: "explicit-constraint-conflict".into(),
+            subject_ref: "user-1".into(),
+            kind: AssertionKindV1::Preference,
+            predicate: "preferred_action".into(),
+            value: json!(ActionV1::new("manual_review")),
+            scope: scope("software_development"),
+            source_type: AssertionSourceTypeV1::Explicit,
+            observed_at: "2026-01-01T00:00:00Z".into(),
+        })
+        .expect("historical preference");
+    let mut input = request("req-current-constraint", vec![intent("deploy", 0.95)]);
+    input.context.current_constraints = vec!["must_deploy_directly".into()];
+
+    let resolved = decision(core.resolve(input).expect("resolve"));
+
+    assert_eq!(resolved.recommended_action.action, "deploy");
+    assert_eq!(resolved.human_model_basis, vec![preference.assertion_id]);
+    assert!(resolved
+        .reason_codes
+        .contains(&"human_model_preference_blocked_by_current_constraint".into()));
+    assert!(!resolved
+        .reason_codes
+        .contains(&"human_model_preference_applied".into()));
+}
+
+#[test]
+fn historical_preference_applies_when_no_current_constraint_conflict() {
+    let mut core = IdrCore::new();
+    core.observe(ObservationV1 {
+        evidence_id: "explicit-no-constraint".into(),
+        subject_ref: "user-1".into(),
+        kind: AssertionKindV1::Preference,
+        predicate: "preferred_action".into(),
+        value: json!(ActionV1::new("manual_review")),
+        scope: scope("software_development"),
+        source_type: AssertionSourceTypeV1::Explicit,
+        observed_at: "2026-01-01T00:00:00Z".into(),
+    })
+    .expect("historical preference");
+    let mut input = request("req-no-current-constraint", vec![intent("deploy", 0.95)]);
+    input.context.current_constraints.clear();
+
+    let resolved = decision(core.resolve(input).expect("resolve"));
+
+    assert_eq!(resolved.recommended_action.action, "manual_review");
+    assert!(resolved
+        .reason_codes
+        .contains(&"human_model_preference_applied".into()));
+    assert!(!resolved.reason_codes.contains(
+        &"human_model_preference_blocked_by_current_constraint".into()
+    ));
+}
+
+#[test]
+fn same_feedback_replay_is_idempotent() {
     let mut core = IdrCore::new();
     let resolved = decision(
-        core.resolve(request("req-10", vec![intent("deploy", 0.95)]))
-            .expect("resolve should succeed"),
+        core.resolve(request("req-replay", vec![intent("deploy", 0.95)]))
+            .expect("resolve"),
     );
-    for _ in 0..3 {
+    let feedback = successful_feedback(
+        &resolved,
+        UserResponseV1::Corrected,
+        ActionV1::new("manual_review"),
+        Some(CorrectionV1 {
+            corrected_intent: None,
+            preferred_action: Some(ActionV1::new("manual_review")),
+        }),
+    );
+    let first = core.feedback(feedback.clone()).expect("first feedback");
+    assert_eq!(core.assertions()[0].source_type, AssertionSourceTypeV1::Explicit);
+    assert_eq!(core.assertions()[0].evidence_refs.len(), 1);
+    assert_eq!(core.assertions()[0].confidence, 0.9);
+    let evidence_after_first = core.evidence().to_vec();
+    let assertions_after_first = core.assertions().to_vec();
+    let evaluations_after_first = core.evaluation_records().to_vec();
+
+    let replay = core.feedback(feedback).expect("identical replay");
+
+    assert_eq!(replay, first);
+    assert_eq!(core.evidence(), evidence_after_first);
+    assert_eq!(core.assertions(), assertions_after_first);
+    assert_eq!(core.evaluation_records(), evaluations_after_first);
+}
+
+#[test]
+fn conflicting_feedback_for_same_decision_fails_closed() {
+    let mut core = IdrCore::new();
+    let resolved = decision(
+        core.resolve(request("req-conflict", vec![intent("deploy", 0.95)]))
+            .expect("resolve"),
+    );
+    let feedback = successful_feedback(
+        &resolved,
+        UserResponseV1::Accepted,
+        ActionV1::new("deploy"),
+        None,
+    );
+    core.feedback(feedback.clone()).expect("first feedback");
+    let evidence_after_first = core.evidence().to_vec();
+    let assertions_after_first = core.assertions().to_vec();
+    let evaluations_after_first = core.evaluation_records().to_vec();
+    let mut conflicting = feedback;
+    conflicting.actual_action = ActionV1::new("manual_review");
+
+    assert!(matches!(
+        core.feedback(conflicting),
+        Err(IdrError::FeedbackConflict(_))
+    ));
+    assert_eq!(core.evidence(), evidence_after_first);
+    assert_eq!(core.assertions(), assertions_after_first);
+    assert_eq!(core.evaluation_records(), evaluations_after_first);
+}
+
+#[test]
+fn three_replays_of_one_decision_do_not_activate_preference() {
+    let mut core = IdrCore::new();
+    let resolved = decision(
+        core.resolve(request("req-three-replays", vec![intent("deploy", 0.95)]))
+            .expect("resolve"),
+    );
+    let feedback = successful_feedback(
+        &resolved,
+        UserResponseV1::Accepted,
+        ActionV1::new("deploy"),
+        None,
+    );
+    let first = core.feedback(feedback.clone()).expect("first feedback");
+    for _ in 0..2 {
+        assert_eq!(
+            core.feedback(feedback.clone()).expect("idempotent replay"),
+            first
+        );
+    }
+
+    assert_eq!(core.evidence().len(), 1);
+    assert_eq!(core.assertions().len(), 1);
+    assert_eq!(core.assertions()[0].status, AssertionStatusV1::Candidate);
+    assert_eq!(core.assertions()[0].evidence_refs.len(), 1);
+    assert_eq!(core.assertions()[0].confidence, 0.25);
+    assert!(core
+        .query_human_model(QueryHumanModelRequestV1 {
+            subject_ref: "user-1".into(),
+            scope: scope("software_development"),
+            as_of: "2026-01-12T00:00:00Z".into(),
+        })
+        .is_empty());
+}
+
+#[test]
+fn three_independent_decisions_can_activate_implicit_preference() {
+    let mut core = IdrCore::new();
+    for number in 1..=3 {
+        let resolved = decision(
+            core.resolve(request(
+                &format!("req-independent-{number}"),
+                vec![intent("deploy", 0.95)],
+            ))
+            .expect("resolve"),
+        );
         core.feedback(successful_feedback(
             &resolved,
             UserResponseV1::Accepted,
             ActionV1::new("deploy"),
             None,
         ))
-        .expect("feedback should succeed");
+        .expect("independent feedback");
     }
-    assert!(core.evidence().len() >= 3);
+
+    assert_eq!(core.evidence().len(), 3);
+    assert_eq!(core.assertions().len(), 1);
+    assert_eq!(core.assertions()[0].status, AssertionStatusV1::Active);
+    assert_eq!(core.assertions()[0].evidence_refs.len(), 3);
+    assert_eq!(core.assertions()[0].confidence, 0.65);
     assert_eq!(
         core.query_human_model(QueryHumanModelRequestV1 {
             subject_ref: "user-1".into(),
@@ -497,6 +659,7 @@ fn corrected_feedback_creates_override_and_changes_next_decision() {
 
     let mut second_request = request("req-12", vec![intent("deploy", 0.95)]);
     second_request.context.data = json!({"as_of": "2026-01-12T00:00:00Z"});
+    second_request.context.current_constraints.clear();
     let second = decision(
         core.resolve(second_request)
             .expect("second resolve"),

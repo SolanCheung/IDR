@@ -72,14 +72,17 @@ The optional `idr-http` crate contains no decision or learning rules.
 - A single implicit signal remains a candidate. Three consistent signals are
   required for activation.
 - Assertions only apply when every assertion scope field matches the request.
-- Current request constraints are carried ahead of historical preferences.
+- Current request constraints block a different historical preferred action
+  unless a future structured compatibility proof explicitly allows it.
 - Inactive, contradicted, superseded, and expired assertions do not apply.
 - Contradictions lower prior confidence, close prior valid time, preserve
   history, and record `supersedes`/`contradicts` relations.
 - Inferred evidence cannot supersede an explicit assertion.
 - Feedback must match the original recommendation, exact scope, and SHA-256
   decision digest before it can update the subject's model or evaluation
-  records. It never changes global policy or model weights online.
+  records. Each decision consumes at most one feedback payload: identical
+  replay returns the cached result, while conflicting replay fails closed. It
+  never changes global policy or model weights online.
 
 ## Evaluation
 

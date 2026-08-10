@@ -1,6 +1,7 @@
-use crate::runtime::now_string;
+use crate::runtime::{now_string, AppliedFeedback};
 use crate::*;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 
 const IMPLICIT_ACTIVATION_COUNT: usize = 3;
 
@@ -70,7 +71,19 @@ impl IdrCore {
             .get(&feedback.decision_id)
             .cloned()
             .ok_or_else(|| IdrError::UnknownDecision(feedback.decision_id.clone()))?;
+        let digest = feedback_digest(&feedback);
+        if let Some(applied) = self.feedback_ledger.get(&feedback.decision_id) {
+            if applied.feedback_digest == digest {
+                return Ok(applied.result.clone());
+            }
+            return Err(IdrError::FeedbackConflict(feedback.decision_id.clone()));
+        }
         validate_feedback_binding(&stored, &feedback)?;
+        let evaluation_index = self
+            .evaluations
+            .iter()
+            .position(|record| record.decision_id == feedback.decision_id)
+            .ok_or_else(|| IdrError::UnknownDecision(feedback.decision_id.clone()))?;
         let mut emitted_evidence = Vec::new();
         let mut assertions_updated = Vec::new();
 
@@ -139,11 +152,6 @@ impl IdrCore {
             .as_ref()
             .and_then(|correction| correction.corrected_intent.as_ref())
             .is_some_and(|intent| intent != &stored.decision.resolved_intent);
-        let evaluation_index = self
-            .evaluations
-            .iter()
-            .position(|record| record.decision_id == feedback.decision_id)
-            .ok_or_else(|| IdrError::UnknownDecision(feedback.decision_id.clone()))?;
         let evaluation = &mut self.evaluations[evaluation_index];
         evaluation.intent_corrected = corrected_intent;
         evaluation.decision_overridden = decision_overridden;
@@ -164,11 +172,19 @@ impl IdrCore {
             }
         }
 
-        Ok(FeedbackResultV1 {
+        let result = FeedbackResultV1 {
             evidence: emitted_evidence,
             assertions_updated,
             evaluation_record: evaluation.clone(),
-        })
+        };
+        self.feedback_ledger.insert(
+            feedback.decision_id,
+            AppliedFeedback {
+                feedback_digest: digest,
+                result: result.clone(),
+            },
+        );
+        Ok(result)
     }
 
     pub(crate) fn applicable_assertions(
@@ -328,6 +344,11 @@ fn validate_feedback_binding(
         ));
     }
     Ok(())
+}
+
+fn feedback_digest(feedback: &OutcomeFeedbackV1) -> String {
+    let encoded = serde_json::to_vec(feedback).expect("feedback must be serializable");
+    format!("{:x}", Sha256::digest(encoded))
 }
 
 pub(crate) fn assertion_applies(

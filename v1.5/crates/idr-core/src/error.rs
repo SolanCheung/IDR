@@ -12,6 +12,8 @@ pub enum IdrError {
     CapabilityViolation(String),
     #[error("resolution failed closed: {0}")]
     Unresolved(String),
+    #[error("conflicting feedback replay for decision: {0}")]
+    FeedbackConflict(String),
 }
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]

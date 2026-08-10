@@ -75,6 +75,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match self.0 {
             IdrError::UnknownDecision(_) => StatusCode::NOT_FOUND,
+            IdrError::FeedbackConflict(_) => StatusCode::CONFLICT,
             IdrError::InvalidContract(_) | IdrError::HostModel(_) => StatusCode::BAD_REQUEST,
             IdrError::CapabilityViolation(_) | IdrError::Unresolved(_) => {
                 StatusCode::UNPROCESSABLE_ENTITY
