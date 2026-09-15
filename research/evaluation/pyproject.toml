@@ -7,6 +7,7 @@ name = "idr-evaluation"
 version = "0.1.0"
 description = "Offline evaluation layer for The Human-Centered Intent & Decision Runtime"
 requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
