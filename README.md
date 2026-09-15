@@ -152,5 +152,13 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 ## License
 
-All rights are reserved until an explicit distribution license is selected.
-See `LICENSE`.
+Copyright (c) 2026 SolanCheung.
+
+IDR source code and documentation are licensed under the
+[Apache License, Version 2.0](LICENSE), except where a file or directory
+identifies a separate license. See [NOTICE](NOTICE) for project attribution.
+Third-party dependencies and vendored materials retain their original licenses
+and notices.
+
+Open-source licensing does not change the production-readiness and audit status
+described above. See [the adoption record](docs/architecture/APACHE_2_0_ADOPTION.md).
