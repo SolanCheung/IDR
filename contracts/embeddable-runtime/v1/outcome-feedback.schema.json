@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/outcome-feedback.schema.json",
+  "title": "OutcomeFeedbackV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_id", "decision_digest", "recommended_action", "actual_action", "user_response", "outcome", "correction", "scope", "observed_at"],
+  "properties": {
+    "decision_id": { "type": "string", "minLength": 1 },
+    "decision_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "recommended_action": { "$ref": "action.schema.json" },
+    "actual_action": { "$ref": "action.schema.json" },
+    "user_response": { "enum": ["accepted", "rejected", "corrected", "ignored"] },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "details"],
+      "properties": {
+        "status": { "enum": ["success", "failure", "partial", "unknown"] },
+        "details": {}
+      }
+    },
+    "correction": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "corrected_intent": { "type": ["string", "null"] },
+        "preferred_action": { "anyOf": [{ "$ref": "action.schema.json" }, { "type": "null" }] }
+      }
+    },
+    "scope": { "$ref": "scope.schema.json" },
+    "observed_at": { "type": "string" }
+  }
+}

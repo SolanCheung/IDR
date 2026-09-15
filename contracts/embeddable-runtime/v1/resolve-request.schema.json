@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/resolve-request.schema.json",
+  "title": "ResolveRequestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "subject_ref", "input", "intent_candidates", "context", "human_model_refs", "human_model_snapshot", "evidence", "host_capabilities"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "subject_ref": { "type": "string", "minLength": 1 },
+    "input": {},
+    "intent_candidates": { "type": "array", "items": { "$ref": "intent-candidate.schema.json" } },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "current_constraints", "data"],
+      "properties": {
+        "scope": { "$ref": "scope.schema.json" },
+        "current_constraints": { "type": "array", "items": { "type": "string" } },
+        "data": {}
+      }
+    },
+    "human_model_refs": { "type": "array", "items": { "type": "string" } },
+    "human_model_snapshot": { "type": "array", "items": { "$ref": "human-model-assertion.schema.json" } },
+    "evidence": { "type": "array", "items": { "$ref": "evidence.schema.json" } },
+    "host_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_inference", "supported_actions"],
+      "properties": {
+        "model_inference": { "type": "boolean" },
+        "supported_actions": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://idr.dev/contracts/embeddable-runtime/v1/unresolved-result.schema.json",
+  "title": "UnresolvedResultV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "resolved_intent", "reason", "reason_codes"],
+  "properties": {
+    "request_id": { "type": "string", "minLength": 1 },
+    "resolved_intent": { "type": ["string", "null"] },
+    "reason": { "enum": ["unsupported_action", "model_inference_unavailable"] },
+    "reason_codes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+  }
+}
